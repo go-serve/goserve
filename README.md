@@ -60,7 +60,7 @@ goserve -port=8123 ./data
 
 Author
 ------
-This software is written by Koala Yeung (koalay at gmail.com).
+This software is written by [Koala Yeung](https://github.com/yookoala) (koalay at gmail.com).
 
 
 Licence
@@ -71,3 +71,4 @@ This software is licenced under GPL v3. You may obtain a copy of the licence in 
 Bug Report
 ----------
 You are always welcome to report issue here:
+https://github.com/yookoala/goserve/issues
