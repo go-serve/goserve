@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/yookoala/goserve/server"
 )
 
 var port *uint64
@@ -64,8 +66,8 @@ func validDir(path string) (err error) {
 	return
 }
 
-func fileServer(dir string) http.Handler {
-	return http.FileServer(http.Dir(dir))
+func fileServer(root string) http.Handler {
+	return server.FileServer(http.Dir(root))
 }
 
 func main() {
