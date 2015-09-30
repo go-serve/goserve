@@ -35,7 +35,6 @@ func init() {
 	// read directory from remaining argument
 	// or use current directory
 	if flag.NArg() == 1 {
-		log.Printf("run here!!!")
 		dir = flag.Arg(0)
 	} else if flag.NArg() > 1 {
 		log.Fatalf("Too many argument. goserve can only serve one directory")
