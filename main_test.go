@@ -19,7 +19,7 @@ func TestFileServer(t *testing.T) {
 	ts := httptest.NewServer(fileServer(test_dir))
 	defer ts.Close()
 
-	res, err := http.Get(ts.URL)
+	res, err := http.Get(ts.URL + "/index.html")
 	if err != nil {
 		log.Fatal(err)
 	}
