@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/yookoala/goserve/server"
 )
 
 var port *uint64
@@ -33,7 +35,6 @@ func init() {
 	// read directory from remaining argument
 	// or use current directory
 	if flag.NArg() == 1 {
-		log.Printf("run here!!!")
 		dir = flag.Arg(0)
 	} else if flag.NArg() > 1 {
 		log.Fatalf("Too many argument. goserve can only serve one directory")
@@ -64,8 +65,8 @@ func validDir(path string) (err error) {
 	return
 }
 
-func fileServer(dir string) http.Handler {
-	return http.FileServer(http.Dir(dir))
+func fileServer(root string) http.Handler {
+	return server.FileServer(http.Dir(root))
 }
 
 func main() {
