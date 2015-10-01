@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"text/template"
 )
@@ -92,6 +93,8 @@ func (fs *fileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				log.Printf("Error listing path %#v:%s", r.URL.Path, err)
 				return
 			}
+
+			sort.Sort(ByName(files))
 
 			listFiles(w, r.URL.Path, files)
 			return
