@@ -3,6 +3,8 @@ package assets
 import (
 	"bytes"
 	"net/http"
+	"os"
+	"strings"
 )
 
 const (
@@ -39,9 +41,11 @@ func (fs *fileSystem) Open(name string) (f http.File, err error) {
 	// test if is a file
 	buf, err := Asset(name)
 	if err != nil {
+		if strings.HasSuffix(err.Error(), "not found") {
+			err = os.ErrNotExist
+		}
 		return
 	}
-
 	f = &File{
 		bytes.NewReader(buf),
 		name,

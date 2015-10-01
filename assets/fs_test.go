@@ -2,6 +2,7 @@ package assets_test
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/yookoala/goserve/assets"
 
@@ -26,7 +27,10 @@ func TestOpenFail(t *testing.T) {
 	fs := assets.FileSystem()
 	_, err := fs.Open("no-such-file")
 	if err == nil {
-		t.Errorf("Expected to see error but didn't get it")
+		t.Error("Expected to see error but didn't get it")
+	}
+	if !os.IsNotExist(err) {
+		t.Errorf("Error did not satisify os.IsNotExists(): %#v", err)
 	}
 }
 
