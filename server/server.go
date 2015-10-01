@@ -1,12 +1,14 @@
 package server
 
 import (
+	"github.com/yookoala/goserve/assets"
+
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"path"
-
-	"log"
+	"strings"
 )
 
 var errNotDir = errors.New("not a directory")
@@ -17,6 +19,7 @@ func FileServer(root http.FileSystem) http.Handler {
 	return &fileServer{
 		root:    root,
 		fileSrv: http.FileServer(root),
+		assets:  http.FileServer(assets.FileSystem()),
 	}
 }
 
@@ -24,10 +27,26 @@ func FileServer(root http.FileSystem) http.Handler {
 type fileServer struct {
 	root    http.FileSystem
 	fileSrv http.Handler
+	assets  http.Handler
 }
 
 // ServeHTTP implements http.Handler
 func (fs *fileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	log.Printf("access %#v", r.URL.Path)
+
+	// serve assets
+	if r.URL.Path == "/_goserve" {
+		http.Redirect(w, r, "/_goserve/", http.StatusMovedPermanently)
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/_goserve/") {
+		r.URL.Path = r.URL.Path[9:]
+		fs.assets.ServeHTTP(w, r)
+		return
+	}
+
+	// serve directory indexes
 	if d, err := fs.ReadDirInfo(r.URL.Path); err == nil {
 
 		if _, err := fs.ReadIndex(r.URL.Path); err != nil {
@@ -53,6 +72,8 @@ func (fs *fileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		log.Printf("Error reading path %#v: %s", r.URL.Path, err)
 	}
+
+	// fallback to normal file server
 	fs.fileSrv.ServeHTTP(w, r)
 }
 
