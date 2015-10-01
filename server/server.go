@@ -151,7 +151,8 @@ func (fs *fileServer) ReadIndex(path string) (f http.File, err error) {
 func listFiles(w http.ResponseWriter, base string, files []os.FileInfo) {
 	w.Header().Add("Content-Type", "text/html")
 	tplIndex.Execute(w, map[string]interface{}{
-		"Files": files,
-		"Base":  base,
+		"Assets": "/_goserve",
+		"Files":  files,
+		"Base":   base,
 	})
 }

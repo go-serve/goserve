@@ -2,15 +2,19 @@
 <html>
 <head>
 <title>Index of {{ .Base }}</title>
+<link rel="stylesheet" type="text/css"
+  href="{{ .Assets }}/css/style.css" />
 </head>
 <body>
-<h1>Index of {{ .Base }}</h1>
-<ul>
-{{ $base := .Base }}
-{{ range $file := .Files }}
-	<li>
-		<a href="{{ joinPath $base $file.Name }}">{{ $file.Name }}</a>
-	</li>
-{{ end }}
-</ul>
+<section>
+	<h1>Index of {{ .Base }}</h1>
+	<ul class="listing">
+	{{ $base := .Base }}
+	{{ range $file := .Files }}
+		<li>
+			<a href="{{ joinPath $base $file.Name }}">{{ $file.Name }}</a>
+		</li>
+	{{ end }}
+	</ul>
+</section>
 </html>
