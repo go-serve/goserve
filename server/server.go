@@ -98,7 +98,7 @@ func (fs *fileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		}
 
-	} else {
+	} else if err != errNotDir {
 		log.Printf("Error reading path %#v: %s", r.URL.Path, err)
 	}
 
