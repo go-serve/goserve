@@ -1,6 +1,10 @@
 goserve
 =======
 
+[![Travis CI results][travis]](https://travis-ci.org/yookoala/goserve)
+
+[travis]: https://api.travis-ci.org/yookoala/goserve.svg?branch=master
+
 `goserve` is a small utility to serve static HTML files in a directory to a given port.
 
 It is intented for developer who wants a quick access to their code through browser. Especially so when their code are not using relative path in link / image / CSS what so ever. Just compile the binary and put it in your `PATH`, then it is good to go.
