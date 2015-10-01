@@ -4,15 +4,51 @@ import (
 	"github.com/yookoala/goserve/assets"
 
 	"errors"
-	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path"
 	"strings"
+	"text/template"
 )
 
 var errNotDir = errors.New("not a directory")
 var errIsDir = errors.New("is a directory")
+var tplIndex *template.Template
+
+func init() {
+
+	fs := assets.FileSystem()
+	fh, err := fs.Open("/templates/index.html")
+	if err != nil {
+		log.Print("Failed to load template")
+		panic(err)
+	}
+
+	b, err := ioutil.ReadAll(fh)
+	if err != nil {
+		log.Print("Failed to read template file")
+		panic(err)
+	}
+
+	tplIndex = template.New("index.html")
+
+	// add utility functions to templates
+	tplIndex = tplIndex.Funcs(template.FuncMap{
+		"joinPath": func(parts ...string) string {
+			return path.Join(parts...)
+		},
+	})
+
+	// parse template
+	tplIndex, err = tplIndex.Parse(string(b))
+	if err != nil {
+		log.Print("Failed to parse index.html into template")
+		panic(err)
+	}
+
+}
 
 // FileServer returns our custom goserve file server
 func FileServer(root http.FileSystem) http.Handler {
@@ -57,14 +93,7 @@ func (fs *fileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			w.Header().Add("Content-Type", "text/html")
-			fmt.Fprint(w, "<h1>Index</h1>")
-			for _, file := range files {
-				fmt.Fprintf(w, "<ul>")
-				fmt.Fprintf(w, "<li><a href=\"%s\">%s</a></li>",
-					path.Join(r.URL.Path, file.Name()), file.Name())
-				fmt.Fprintf(w, "</ul>")
-			}
+			listFiles(w, r.URL.Path, files)
 			return
 
 		}
@@ -117,4 +146,12 @@ func (fs *fileServer) ReadIndex(path string) (f http.File, err error) {
 	}
 
 	return
+}
+
+func listFiles(w http.ResponseWriter, base string, files []os.FileInfo) {
+	w.Header().Add("Content-Type", "text/html")
+	tplIndex.Execute(w, map[string]interface{}{
+		"Files": files,
+		"Base":  base,
+	})
 }

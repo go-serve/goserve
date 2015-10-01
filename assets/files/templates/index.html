@@ -1,4 +1,16 @@
-<!doctype>
+<!DOCTYPE html>
 <html>
-Hello listing
+<head>
+<title>Index of {{ .Base }}</title>
+</head>
+<body>
+<h1>Index of {{ .Base }}</h1>
+<ul>
+{{ $base := .Base }}
+{{ range $file := .Files }}
+	<li>
+		<a href="{{ joinPath $base $file.Name }}">{{ $file.Name }}</a>
+	</li>
+{{ end }}
+</ul>
 </html>
