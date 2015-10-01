@@ -43,5 +43,9 @@ func (f *File) Readdir(count int) (lfi []os.FileInfo, err error) {
 // Stat returns the FileInfo structure describing file. If
 // there is an error, it will be of type *PathError.
 func (f *File) Stat() (fi os.FileInfo, err error) {
+	if f.t == TypeDir {
+		fi = &assetDirInfo{}
+		return
+	}
 	return AssetInfo(f.name)
 }
