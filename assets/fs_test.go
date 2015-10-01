@@ -16,7 +16,7 @@ func TestFileSystem(t *testing.T) {
 
 func TestOpenSuccess(t *testing.T) {
 	fs := assets.FileSystem()
-	_, err := fs.Open("js/jquery/jquery-1.11.3.min.js")
+	_, err := fs.Open("/js/jquery/jquery-1.11.3.min.js")
 	if err != nil {
 		t.Errorf("Failed opening file \"%s\"", err)
 	}
@@ -32,7 +32,7 @@ func TestOpenFail(t *testing.T) {
 
 func TestList1(t *testing.T) {
 	fs := assets.FileSystem()
-	dir := "js/jquery"
+	dir := "/js/jquery"
 	d, err := fs.Open(dir)
 	if err != nil {
 		t.Errorf("Failed openning %#v: %s", dir, err)
@@ -50,7 +50,7 @@ func TestList1(t *testing.T) {
 
 func TestListAll(t *testing.T) {
 	fs := assets.FileSystem()
-	dir := "js/jquery"
+	dir := "/js/jquery"
 	d, err := fs.Open(dir)
 	if err != nil {
 		t.Errorf("Failed openning %#v: %s", dir, err)

@@ -21,6 +21,10 @@ type fileSystem struct {
 // Open the given string or return error
 func (fs *fileSystem) Open(name string) (f http.File, err error) {
 
+	if name[0] == '/' {
+		name = name[1:]
+	}
+
 	// test if is an unempty dir
 	names, _ := AssetDir(name)
 	if len(names) != 0 {
