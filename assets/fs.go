@@ -34,6 +34,7 @@ func (fs *fileSystem) Open(name string) (f http.File, err error) {
 			bytes.NewReader([]byte{}),
 			name,
 			TypeDir,
+			0,
 		}
 		return
 	}
@@ -50,6 +51,7 @@ func (fs *fileSystem) Open(name string) (f http.File, err error) {
 		bytes.NewReader(buf),
 		name,
 		TypeFile,
+		0,
 	}
 	return
 }

@@ -2,6 +2,7 @@ package assets
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path"
 )
@@ -9,8 +10,9 @@ import (
 // File implments http.File
 type File struct {
 	*bytes.Reader
-	name string
-	t    int
+	name   string
+	t      int
+	dirPos int
 }
 
 // Close is a dummy method to implment io.Closer
@@ -25,16 +27,28 @@ func (f *File) Close() error {
 func (f *File) Readdir(count int) (lfi []os.FileInfo, err error) {
 	names, err := AssetDir(f.name)
 	lfi = make([]os.FileInfo, 0)
-	var fi os.FileInfo
 
-	i := 1
+	var fi os.FileInfo
+	var i, j int
+
+	exists := false
 	for _, name := range names {
-		fi, err = AssetInfo(path.Join(f.name, name))
-		lfi = append(lfi, fi)
-		if i == count {
+		if i >= f.dirPos {
+			exists = true
+			fi, err = AssetInfo(path.Join(f.name, name))
+			lfi = append(lfi, fi)
+			j++
+		}
+
+		i++
+		if j == count {
 			break
 		}
-		i++
+	}
+
+	f.dirPos += j
+	if !exists {
+		err = io.EOF
 	}
 
 	return
