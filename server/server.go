@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"sort"
 	"strings"
 	"text/template"
 )
@@ -94,8 +93,11 @@ func (fs *fileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			sort.Sort(ByName(files))
+			// sort according to query
+			s := r.URL.Query().Get("sort")
+			QuerySort(s, files) // TODO: add error reporting here
 
+			// list the files
 			listFiles(w, r.URL.Path, files)
 			return
 
