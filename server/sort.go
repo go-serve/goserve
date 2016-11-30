@@ -56,7 +56,7 @@ func SortBy(by string, files []os.FileInfo) (s sort.Interface, err error) {
 	return
 }
 
-// ByName implements sort.Interface
+// ByName sorts []os.FileInfo by Name() results
 type ByName []os.FileInfo
 
 // Len is the number of elements in the collection.
@@ -77,7 +77,7 @@ func (fi ByName) Swap(i, j int) {
 	fi[j] = tmp
 }
 
-// ByModTime
+// ByModTime sorts []os.FileInfo by the ModTime() results
 type ByModTime []os.FileInfo
 
 // Len is the number of elements in the collection.
@@ -98,7 +98,7 @@ func (fi ByModTime) Swap(i, j int) {
 	fi[j] = tmp
 }
 
-// ByType
+// ByType sorts directory before files in []os.FileInfo
 type ByType []os.FileInfo
 
 // Len is the number of elements in the collection.

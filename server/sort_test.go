@@ -93,3 +93,67 @@ func TestByNameAndType(t *testing.T) {
 		}
 	}
 }
+
+func TestQuerySort(t *testing.T) {
+
+	l := testList()
+	err := server.QuerySort("", l)
+	if err != nil {
+		t.Errorf("unexpected error: %s", err.Error())
+	}
+	if want, have := "B, A, C, D, F, G, E", listNames(l); want != have {
+		t.Errorf("\nexpected: %s\ngot:      %s", want, have)
+	}
+
+	l = testList()
+	err = server.QuerySort("-name", l)
+	if err != nil {
+		t.Errorf("unexpected error: %s", err.Error())
+	}
+	if want, have := "G, F, E, D, C, B, A", listNames(l); want != have {
+		t.Errorf("\nexpected: %s\ngot:      %s", want, have)
+	}
+
+	l = testList()
+	err = server.QuerySort("-mtime", l)
+	if err != nil {
+		t.Errorf("unexpected error: %s", err.Error())
+	}
+	if want, have := "G, F, E, D, C, B, A", listNames(l); want != have {
+		t.Errorf("\nexpected: %s\ngot:      %s", want, have)
+	}
+
+	l = testList()
+	err = server.QuerySort("type,mtime", l)
+	if err != nil {
+		t.Errorf("unexpected error: %s", err.Error())
+	}
+	if want, have := "E, F, G, A, B, C, D", listNames(l); want != have {
+		t.Errorf("\nexpected: %s\ngot:      %s", want, have)
+	}
+
+	l = testList()
+	err = server.QuerySort("mtime,unknown", l)
+	if want, have := "B, A, C, D, F, G, E", listNames(l); want != have {
+		t.Errorf("\nexpected: %s\ngot:      %s", want, have)
+	}
+	if err == nil {
+		t.Errorf("unexpected error: %s", err.Error())
+	}
+	if want, have := "unsupported sorting \"unknown\"", err.Error(); want != have {
+		t.Errorf("unexpected error message: %#v", have)
+	}
+
+	l = testList()
+	err = server.QuerySort("unknown,mtime", l)
+	if want, have := "A, B, C, D, E, F, G", listNames(l); want != have {
+		t.Errorf("\nexpected: %s\ngot:      %s", want, have)
+	}
+	if err == nil {
+		t.Errorf("unexpected error: %s", err.Error())
+	}
+	if want, have := "unsupported sorting \"unknown\"", err.Error(); want != have {
+		t.Errorf("unexpected error message: %#v", have)
+	}
+
+}
