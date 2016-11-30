@@ -23,7 +23,7 @@ func QuerySort(sortq string, files []os.FileInfo) (err error) {
 		if err != nil {
 			return
 		}
-		sort.Sort(si)
+		sort.Stable(si)
 	}
 	return
 }
