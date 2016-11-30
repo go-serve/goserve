@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/yookoala/goserve/assets"
+	"github.com/go-serve/goserve/assets"
 
 	"testing"
 )

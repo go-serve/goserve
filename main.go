@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/yookoala/goserve/server"
+	"github.com/go-serve/goserve/server"
 )
 
 var port *uint64

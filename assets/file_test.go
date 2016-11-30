@@ -3,7 +3,7 @@ package assets_test
 import (
 	"net/http"
 
-	"github.com/yookoala/goserve/assets"
+	"github.com/go-serve/goserve/assets"
 
 	"testing"
 )

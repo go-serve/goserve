@@ -1,9 +1,9 @@
 goserve
 =======
 
-[![Travis CI results][travis]](https://travis-ci.org/yookoala/goserve)
+[![Travis CI results][travis]](https://travis-ci.org/go-serve/goserve)
 
-[travis]: https://api.travis-ci.org/yookoala/goserve.svg?branch=master
+[travis]: https://api.travis-ci.org/go-serve/goserve.svg?branch=master
 
 `goserve` is a small utility to serve static HTML files in a directory to a given port.
 
@@ -22,13 +22,13 @@ Installation
 If you have set `GOPATH/bin` to your `PATH`, you may install and use this by:
 
 ```sh
-go get github.com/yookoala/goserve
+go get github.com/go-serve/goserve
 ```
 
 Alternatively, you may compile and copy the binary to your directory in `PATH`.
 
 ```sh
-git clone https://github.com/yookoala/goserve.git
+git clone https://github.com/go-serve/goserve.git
 cd goserve
 go build
 cp goserve YOUR_DIR_IN_PATH/.
@@ -64,7 +64,7 @@ goserve -port=8123 ./data
 
 Author
 ------
-This software is written by [Koala Yeung](https://github.com/yookoala) (koalay at gmail.com).
+This software is written by [Koala Yeung](https://github.com/go-serve) (koalay at gmail.com).
 
 
 Licence
@@ -75,4 +75,4 @@ This software is licenced under GPL v3. You may obtain a copy of the licence in 
 Bug Report
 ----------
 You are always welcome to report issue here:
-https://github.com/yookoala/goserve/issues
+https://github.com/go-serve/goserve/issues

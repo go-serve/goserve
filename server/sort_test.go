@@ -1,7 +1,7 @@
 package server_test
 
 import (
-	"github.com/yookoala/goserve/server"
+	"github.com/go-serve/goserve/server"
 
 	"testing"
 
