@@ -1,7 +1,4 @@
-goserve
-=======
-
-[![Travis CI results][travis]](https://travis-ci.org/go-serve/goserve)
+# goserve [![Travis CI results][travis]](https://travis-ci.org/go-serve/goserve)
 
 [travis]: https://api.travis-ci.org/go-serve/goserve.svg?branch=master
 
@@ -22,7 +19,7 @@ Installation
 If you have set `GOPATH/bin` to your `PATH`, you may install and use this by:
 
 ```sh
-go get github.com/go-serve/goserve
+go get -u github.com/go-serve/goserve
 ```
 
 Alternatively, you may compile and copy the binary to your directory in `PATH`.
@@ -64,7 +61,7 @@ goserve -port=8123 ./data
 
 Author
 ------
-This software is written by [Koala Yeung](https://github.com/go-serve) (koalay at gmail.com).
+This software is written by [Koala Yeung](https://github.com/yookoala) (koalay at gmail.com).
 
 
 Licence
