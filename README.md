@@ -15,13 +15,13 @@ It is intented for developer who wants a quick access to their code through brow
 The code is dead simple. I simply don't want to write it all the time. And I wish it might be of help to you, too.
 
 
-Requirement
------------
+## Requirement
+
 `goserve` requires only the core go libraries. No need to `go get` anything other than this.
 
 
-Installation
-------------
+## Installation
+
 If you have set `GOPATH/bin` to your `PATH`, you may install and use this by:
 
 ```sh
@@ -38,8 +38,7 @@ cp goserve YOUR_DIR_IN_PATH/.
 ```
 
 
-Usage
------
+## Usage
 
 Just type this, a server will be serving the files in the current directory to default port 8080:
 
@@ -65,13 +64,13 @@ goserve -port=8123 ./data
 ```
 
 
-Author
-------
+## Author
+
 This software is written by [Koala Yeung](https://github.com/yookoala) (koalay at gmail.com).
 
 
-Licence
--------
+## Licence
+
 This software is licenced under GPL v3. You may obtain a copy of the licence in the `LICENSE` file in this repository.
 
 
