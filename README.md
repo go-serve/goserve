@@ -1,6 +1,12 @@
-# goserve [![Travis CI results][travis]](https://travis-ci.org/go-serve/goserve)
+# goserve [![Documentations][shield-godoc]][godoc] [![Travis CI results][shield-travis]][travis] [![Coverage Status][coveralls-badge]][coveralls]
 
-[travis]: https://api.travis-ci.org/go-serve/goserve.svg?branch=master
+[travis]: https://travis-ci.org/go-serve/goserve
+[shield-travis]: https://api.travis-ci.org/go-serve/goserve.svg?branch=master
+[godoc]: https://godoc.org/github.com/go-serve/bindatafs
+[shield-godoc]: https://img.shields.io/badge/godoc-reference-5272B4.svg
+[coveralls]: https://coveralls.io/github/go-serve/goserve?branch=master
+[shield-coveralls]: https://coveralls.io/repos/github/go-serve/goserve/badge.svg?branch=master
+
 
 `goserve` is a small utility to serve static HTML files in a directory to a given port.
 
