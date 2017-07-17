@@ -95,6 +95,10 @@ func (fs *fileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			// sort according to query
 			s := r.URL.Query().Get("sort")
+			if s == "" {
+				// default sort order: by mtime, desc
+				s = "-mtime"
+			}
 			QuerySort(s, files) // TODO: add error reporting here
 
 			// list the files
