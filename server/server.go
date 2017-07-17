@@ -16,11 +16,12 @@ import (
 var errNotDir = errors.New("not a directory")
 var errIsDir = errors.New("is a directory")
 var tplIndex *template.Template
+var assetsURL = "/_goserve/assets"
 
 func init() {
 
 	fs := assets.FileSystem()
-	fh, err := fs.Open("/templates/index.html")
+	fh, err := fs.Open("/html/index.html")
 	if err != nil {
 		log.Print("Failed to load template")
 		panic(err)
@@ -48,6 +49,11 @@ func init() {
 		panic(err)
 	}
 
+	// NODE_ENV check
+	if os.Getenv("NODE_ENV") == "development" {
+		assetsURL = "http://localhost:8081" + assetsURL
+	}
+
 }
 
 // FileServer returns our custom goserve file server
@@ -72,12 +78,12 @@ func (fs *fileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("access %#v", r.URL.Path)
 
 	// serve assets
-	if r.URL.Path == "/_goserve" {
-		http.Redirect(w, r, "/_goserve/", http.StatusMovedPermanently)
+	if r.URL.Path == "/_goserve/assets" {
+		http.Redirect(w, r, "/_goserve/assets/", http.StatusMovedPermanently)
 		return
 	}
-	if strings.HasPrefix(r.URL.Path, "/_goserve/") {
-		r.URL.Path = r.URL.Path[9:]
+	if strings.HasPrefix(r.URL.Path, "/_goserve/assets/") {
+		r.URL.Path = r.URL.Path[16:]
 		fs.assets.ServeHTTP(w, r)
 		return
 	}
@@ -160,7 +166,7 @@ func (fs *fileServer) ReadIndex(path string) (f http.File, err error) {
 func listFiles(w http.ResponseWriter, base string, files []os.FileInfo) {
 	w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	tplIndex.Execute(w, map[string]interface{}{
-		"Assets": "/_goserve",
+		"Assets": assetsURL,
 		"Files":  files,
 		"Base":   base,
 	})

@@ -1,2 +1,9 @@
+# build binaries
 gin-bin
 goserve
+
+# nodejs module folder
+/node_modules
+
+# asset dist
+/assets/dist
