@@ -13,6 +13,15 @@ import (
 	"github.com/go-midway/midway"
 )
 
+// FileInfo is a JSON display of a subset of os.FileInfo information
+type FileInfo struct {
+	Name  string    `json:"name"`
+	Path  string    `json:"path,omitempty"`
+	Type  string    `json:"type"`
+	Size  int64     `json:"size,omitempty"`
+	MTime time.Time `json:"mtime,omitempty"`
+}
+
 // FileStat stores and display a file's information as JSON
 type FileStat struct {
 	Name  string
@@ -107,7 +116,7 @@ func statsEndpoint(ctx context.Context, req interface{}) (stats interface{}, err
 
 	path := req.(string)
 
-	// TODO: build the absolute file / dir path for stat and open
+	// TODO: rewrite with FileSystem
 	stat, err := os.Stat(path)
 
 	// if file not found
@@ -159,6 +168,99 @@ func statsEndpoint(ctx context.Context, req interface{}) (stats interface{}, err
 		return
 	}
 
+	return
+}
+
+func listEndpoint(ctx context.Context, req interface{}) (resp interface{}, err error) {
+	path := req.(string)
+
+	// TODO: build the absolute file / dir path for stat and open
+	stat, err := os.Stat(path)
+
+	// if file not found
+	if os.IsNotExist(err) {
+		err = NewStatError(http.StatusNotFound, path)
+		return
+	}
+
+	// permission problem
+	if err != nil {
+		perr, _ := err.(*os.PathError)
+		if perr.Err.Error() == os.ErrPermission.Error() {
+			err = NewStatError(http.StatusForbidden, path)
+		}
+		return
+	}
+
+	// for directories
+	if stat.Mode().IsDir() {
+
+		var d *os.File
+		files := make([]os.FileInfo, 0, 40)
+		// TODO: use FileSystem for file access
+		if d, err = os.Open(path); err != nil {
+			log.Printf("Error listing path %#v:%s", path, err)
+			err = NewStatError(http.StatusInternalServerError, path)
+			return
+		}
+		defer d.Close()
+
+		files, err = d.Readdir(0)
+		if err != nil {
+			log.Printf("Error listing path %#v:%s", path, err)
+			return
+		}
+
+		// sort according to query
+		// TODO: store sort in context and retrieve it here
+		// TODO: rewrite with go-linq
+		/*
+			s := r.URL.Query().Get("sort")
+			if s == "" {
+				// default sort order: by mtime, desc
+				s = "-mtime"
+			}
+		*/
+		s := "-mtime"
+		QuerySort(s, files) // TODO: add error reporting here
+
+		listLen := len(files)
+		list := make([]FileInfo, listLen)
+		for i := 0; i < listLen; i++ {
+			item := files[i]
+			if item.Mode().IsRegular() {
+				list[i] = FileInfo{
+					Name:  item.Name(),
+					Type:  "file",
+					Path:  path + "/" + item.Name(),
+					Size:  item.Size(),
+					MTime: item.ModTime(),
+				}
+			} else if item.IsDir() {
+				list[i] = FileInfo{
+					Name:  item.Name(),
+					Type:  "directory",
+					Path:  path + "/" + item.Name(),
+					MTime: item.ModTime(),
+				}
+			} else {
+				list[i] = FileInfo{
+					Name: item.Name(),
+					Type: "other",
+					Path: path + "/" + item.Name(),
+				}
+			}
+		}
+
+		resp = struct {
+			Items []FileInfo `json:"items"`
+		}{
+			Items: list,
+		}
+		return
+	}
+
+	err = NewStatError(http.StatusBadRequest, path)
 	return
 }
 
@@ -215,6 +317,7 @@ func ServeAPI(path string, root http.FileSystem) midway.Middleware {
 
 	// wrap endpoints
 	handleStats := handleEndpoint(statsEndpoint)
+	handleList := handleEndpoint(listEndpoint)
 
 	return func(inner http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -231,6 +334,13 @@ func ServeAPI(path string, root http.FileSystem) midway.Middleware {
 				if strings.HasPrefix(r.URL.Path, "stats/") {
 					r.URL.Path = r.URL.Path[6:]
 					handleStats(w, r)
+					return
+				}
+
+				// listing files in directory
+				if strings.HasPrefix(r.URL.Path, "lists/") {
+					r.URL.Path = r.URL.Path[6:]
+					handleList(w, r)
 					return
 				}
 
