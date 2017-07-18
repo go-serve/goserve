@@ -91,10 +91,11 @@ func FileServer(root http.FileSystem) http.Handler {
 		root:    root,
 		fileSrv: http.FileServer(root),
 	}
-	return ServeAssets(
-		"/_goserve/assets",
-		assets.FileSystem(),
-	)(fserver)
+	middlewares := midway.Chain(
+		ServeAPI("/_goserve/api", root),
+		ServeAssets("/_goserve/assets", assets.FileSystem()),
+	)
+	return middlewares(fserver)
 }
 
 // custom implementation of FileServer
