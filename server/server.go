@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/go-midway/midway"
 	"github.com/go-serve/goserve/assets"
 
 	"errors"
@@ -56,37 +57,56 @@ func init() {
 
 }
 
+// ServeAssets generates a middleware that serves file assets
+func ServeAssets(path string, root http.FileSystem) midway.Middleware {
+
+	path = strings.TrimRight(path, "/")
+	pathWithSlash := path + "/"
+	pathLen := len(pathWithSlash)
+	fileAssets := http.FileServer(root)
+
+	return func(inner http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			// serve assets
+			if r.URL.Path == path {
+				http.Redirect(w, r, pathWithSlash, http.StatusMovedPermanently)
+				return
+			}
+			if strings.HasPrefix(r.URL.Path, pathWithSlash) {
+				r.URL.Path = r.URL.Path[pathLen:] // strip base path
+				fileAssets.ServeHTTP(w, r)
+				return
+			}
+
+			// defers to inner handler
+			inner.ServeHTTP(w, r)
+		})
+	}
+}
+
 // FileServer returns our custom goserve file server
 func FileServer(root http.FileSystem) http.Handler {
-	return &fileServer{
+	fserver := &fileServer{
 		root:    root,
 		fileSrv: http.FileServer(root),
-		assets:  http.FileServer(assets.FileSystem()),
 	}
+	return ServeAssets(
+		"/_goserve/assets",
+		assets.FileSystem(),
+	)(fserver)
 }
 
 // custom implementation of FileServer
 type fileServer struct {
 	root    http.FileSystem
 	fileSrv http.Handler
-	assets  http.Handler
 }
 
 // ServeHTTP implements http.Handler
 func (fs *fileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("access %#v", r.URL.Path)
-
-	// serve assets
-	if r.URL.Path == "/_goserve/assets" {
-		http.Redirect(w, r, "/_goserve/assets/", http.StatusMovedPermanently)
-		return
-	}
-	if strings.HasPrefix(r.URL.Path, "/_goserve/assets/") {
-		r.URL.Path = r.URL.Path[16:]
-		fs.assets.ServeHTTP(w, r)
-		return
-	}
 
 	// serve directory indexes
 	if d, err := fs.ReadDirInfo(r.URL.Path); err == nil {
