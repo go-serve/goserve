@@ -111,6 +111,7 @@ func FileServer(root http.FileSystem) http.Handler {
 	middlewares := midway.Chain(
 		ServeAPI("/_goserve/api", root),
 		ServeAssets("/_goserve/assets", assets.FileSystem()),
+		ServeVideo(root),
 	)
 	return middlewares(fserver)
 }

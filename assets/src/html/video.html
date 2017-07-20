@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>{{ .Name }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+{{ range $file := .Stylesheets }}
+<link rel="stylesheet" type="text/css" href="{{ $file }}" />
+{{ end }}
+</head>
+<body class="page-video">
+  <div class="video-container">
+    <video controls>
+      <source src="{{ .Path }}" type="{{ .MetaType }}" />
+      {{ range $index, $sub := .Subtitles }}
+        <track
+          kind="subtitles"
+          src="{{ $sub.Path }}"
+          srclang="{{ $sub.Language }}"
+          label="{{ $sub.Label }}"
+          {{ if eq $index 0 }}
+          default
+          {{ end }}
+        />
+      {{ end }}
+    </video>
+  </div>
+{{ range $file := .Scripts }}
+<script src="{{ $file }}"></script>
+{{ end }}
+</body>
+</html>
