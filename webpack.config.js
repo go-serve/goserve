@@ -3,6 +3,7 @@ const webpack = require('webpack');
 const path = require('path');
 const url = require('url');
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
+const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 
 require('dotenv').config();
 
@@ -19,42 +20,41 @@ function getScriptHost() {
   };
 }
 
-const extractSass = new ExtractTextPlugin({
-  filename: 'css/[name].[contenthash].css',
-  disable: !isDev,
-});
-
 const plugins = isDev ? [
   new webpack.HotModuleReplacementPlugin(),
-  extractSass,
 ] : [
+  new ExtractTextPlugin({
+    filename: 'css/[name].css',
+  }),
+  new OptimizeCssAssetsPlugin({
+    assetNameRegExp: /\.css$/,
+    cssProcessorOptions: {
+      discardComments: {
+        removeAll: true,
+      }
+    },
+  }),
   new UglifyJSPlugin(),
-  extractSass,
 ];
 
 const sassRule = isDev ? {
   test: /\.scss$/,
   use: [
-    {
-      loader: 'style-loader', // creates style nodes from JS strings
-    }, {
-      loader: 'css-loader', // translates CSS into CommonJS
-    }, {
-      loader: 'sass-loader', // compiles Sass to CSS
-    },
+    // creates style nodes from JS strings
+    'style-loader',
+    // translates CSS into CommonJS
+    'css-loader',
+    // compiles Sass to CSS
+    'sass-loader',
   ],
 } : {
   test: /\.scss$/,
-  use: extractSass.extract({
-    use: [
-      {
-        loader: 'css-loader',
-      }, {
-        loader: 'sass-loader',
-      },
-    ],
-    // use style-loader in development
+  use: ExtractTextPlugin.extract({
     fallback: 'style-loader',
+    use: [
+      'css-loader',
+      'sass-loader',
+    ],
   }),
 };
 
@@ -64,14 +64,16 @@ const externals = {
 const scriptHost = getScriptHost();
 
 module.exports = {
-  entry: [
-    'babel-polyfill',
-    './assets/src/js/app.js',
-  ],
+  entry: {
+    'app': [
+      'babel-polyfill',
+      './assets/src/js/app.js',
+    ],
+  },
   output: {
     path: path.resolve(__dirname, 'assets/dist'),
     publicPath: !isDev ? '' : scriptHost.publicPath,
-    filename: 'js/app.js',
+    filename: 'js/[name].js',
   },
   module: {
     rules: [
