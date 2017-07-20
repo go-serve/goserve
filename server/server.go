@@ -14,10 +14,14 @@ import (
 	"text/template"
 )
 
+const assetsPath = "/_goserve/assets"
+
 var errNotDir = errors.New("not a directory")
 var errIsDir = errors.New("is a directory")
 var tplIndex *template.Template
-var assetsURL = "/_goserve/assets"
+
+var stylesheets []string
+var scripts []string
 
 func init() {
 
@@ -50,9 +54,22 @@ func init() {
 		panic(err)
 	}
 
+	// common stylesheets to use
+	stylesheets = []string{
+		assetsPath + "/css/app.css",
+	}
+
+	// common scripts to use
+	scripts = []string{
+		assetsPath + "/js/app.js",
+	}
+
 	// NODE_ENV check
 	if os.Getenv("NODE_ENV") == "development" {
-		assetsURL = "http://localhost:8081" + assetsURL
+		stylesheets = []string{}
+		scripts = []string{
+			"http://localhost:8081" + assetsPath + "/js/app.js",
+		}
 	}
 
 }
@@ -187,8 +204,9 @@ func (fs *fileServer) ReadIndex(path string) (f http.File, err error) {
 func listFiles(w http.ResponseWriter, base string, files []os.FileInfo) {
 	w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	tplIndex.Execute(w, map[string]interface{}{
-		"Assets": assetsURL,
-		"Files":  files,
-		"Base":   base,
+		"Stylesheets": stylesheets,
+		"Scripts":     scripts,
+		"Files":       files,
+		"Base":        base,
 	})
 }

@@ -3,6 +3,9 @@
 <head>
 <title>Index of {{ .Base }}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+{{ range $file := .Stylesheets }}
+<link rel="stylesheet" type="text/css" href="{{ $file }}" />
+{{ end }}
 </head>
 <body>
 <section>
@@ -20,5 +23,7 @@
 	{{ end }}
 	</ul>
 </section>
-<script src="{{ .Assets }}/js/app.js"></script>
+{{ range $file := .Scripts }}
+<script src="{{ $file }}"></script>
+{{ end }}
 </html>

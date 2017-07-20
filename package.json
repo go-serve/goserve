@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "clear": "rm -Rf ./assets/dist goserve",
     "build": "npm-run-all build:webpack build:html build:golang:assets build:golang:server",
     "build:golang:assets": "go generate assets/gen.go",
     "build:golang:server": "go build",
@@ -11,7 +12,7 @@
     "build:webpack": "NODE_ENV=production webpack",
     "dev": "npm-run-all --parallel dev:webpack dev:gin",
     "dev:webpack": "NODE_ENV=development webpack-dev-server",
-    "dev:gin": "NODE_ENV=development gin -port 8080 -build .",
+    "dev:gin": "NODE_ENV=development gin -port 8080 -bin goserve -build .",
     "devfront": "npm-run-all --parallel devfront:build-and-run dev:webpack",
     "devfront:run": "NODE_ENV=development ./goserve",
     "devfront:build-and-run": "npm-run-all build:golang:server devfront:run",
