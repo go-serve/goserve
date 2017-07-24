@@ -112,6 +112,7 @@ func FileServer(root http.FileSystem) http.Handler {
 		ServeAPI("/_goserve/api", root),
 		ServeAssets("/_goserve/assets", assets.FileSystem()),
 		ServeVideo(root),
+		ServeSrt(root),
 	)
 	return middlewares(fserver)
 }

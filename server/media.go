@@ -1,13 +1,16 @@
 package server
 
 import (
+	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"mime"
 	"net/http"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/go-midway/midway"
@@ -15,6 +18,7 @@ import (
 )
 
 var tplVideo *template.Template
+var srtDateReg *regexp.Regexp
 
 func init() {
 
@@ -45,7 +49,10 @@ func init() {
 
 	// side-effect: add extension to mime types
 	mime.AddExtensionType(".vtt", "text/vtt")
-	mime.AddExtensionType(".srt", "text/vtt")
+	mime.AddExtensionType(".srt", "text/srt")
+
+	// format of an SRT date line
+	srtDateReg = regexp.MustCompile("(\\d{2}:\\d{2}:\\d{2}),(\\d{3}) --> (\\d{2}:\\d{2}:\\d{2}),(\\d{3})")
 }
 
 // ServeVideo displays HTML5 compatible video files with proper HTML player page
@@ -92,7 +99,7 @@ func ServeVideo(root http.FileSystem) midway.Middleware {
 				if srt, err := root.Open(fileBasename + ".srt"); err == nil {
 					if stat, err := srt.Stat(); err == nil && !stat.Mode().IsDir() {
 						subtitles = append(subtitles, map[string]string{
-							"Path":     fileBasename + ".srt",
+							"Path":     fileBasename + ".srt?mode=vtt",
 							"Language": "en",
 							"Label":    "English",
 						})
@@ -120,4 +127,111 @@ func ServeVideo(root http.FileSystem) midway.Middleware {
 			inner.ServeHTTP(w, r)
 		})
 	}
+}
+
+// ServeSrt serves translates srt files to webvtt and write
+// to browser on-the-go
+func ServeSrt(root http.FileSystem) midway.Middleware {
+	return func(inner http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			if strings.ToLower(path.Ext(r.URL.Path)) == ".srt" {
+				if r.URL.Query().Get("mode") == "vtt" {
+					// TODO: check file extension, should be srt
+
+					// Open SRT and wrap with SrtWebvttReader
+					srt, err := root.Open(r.URL.Path)
+					if err != nil {
+						// defer to inner handler
+						inner.ServeHTTP(w, r)
+						return
+					}
+					defer srt.Close()
+
+					// mask the SRT with masking reader
+					r, err := NewSrtWebvttReader(srt)
+					if err != nil {
+						// TODO: handler error
+						return
+					}
+
+					// use io.Copy to pipe out the masked reader
+					w.Header().Set("Content-Type", "text/vtt; charset=utf-8")
+					w.WriteHeader(http.StatusOK)
+					io.Copy(w, r)
+					return
+				}
+			}
+
+			// use inner handler
+			inner.ServeHTTP(w, r)
+			return
+		})
+	}
+}
+
+// SrtWebvttReader masks inner reader stream of supposed
+// SRT files into WEBVTT stream reader
+type SrtWebvttReader struct {
+	src  io.Reader
+	buff []byte
+	p    int
+}
+
+// Read implements io.Reader
+func (r *SrtWebvttReader) Read(b []byte) (n int, err error) {
+
+	// first read, prefix to WEBVTT
+	if r.p == 0 {
+
+		// add prefix text
+		var prefN, buffN int
+		prefN = 8
+
+		// create buffer for first read
+		buff := make([]byte, len(b)-8)
+		buffN, err = r.src.Read(buff)
+		if err != nil {
+			return
+		}
+
+		// TODO; handle date conversion in buff
+		buff = srtDateReg.ReplaceAll(buff, []byte("$1.$2 --> $3.$4"))
+
+		// copy buffered first read to output byte slice
+		copy(b, append([]byte("WEBVTT\n\n"), buff...))
+		n = prefN + buffN
+		r.p = n
+		return
+	}
+
+	// resize buffer to fit reader
+	if len(r.buff) != len(b) {
+		r.buff = make([]byte, len(b))
+	}
+
+	// read to buffer
+	n, err = r.src.Read(r.buff)
+	r.p += n
+
+	// handle date conversion in buff
+	buff := srtDateReg.ReplaceAll(r.buff, []byte("$1.$2 --> $3.$4"))
+
+	// copy to output
+	copy(b, buff)
+	return
+}
+
+// NewSrtWebvttReader converts
+func NewSrtWebvttReader(inner io.Reader) (r io.Reader, err error) {
+	if inner == nil {
+		err = fmt.Errorf("inner reader is empty")
+		return
+	}
+	r = &SrtWebvttReader{
+		src:  inner,
+		buff: make([]byte, 1024),
+		p:    0,
+	}
+	return
 }
