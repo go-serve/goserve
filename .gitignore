@@ -7,3 +7,6 @@ goserve
 
 # asset dist
 /assets/dist
+
+# example folder, prevent unecessary addition of files
+/_example
