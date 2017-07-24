@@ -8,6 +8,7 @@ import (
 	"log"
 	"mime"
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -62,32 +63,30 @@ func ServeVideo(root http.FileSystem) midway.Middleware {
 
 			if r.URL.Query().Get("mode") == "videoplayer" {
 
-				log.Printf("open videoplayer!")
+				var stat os.FileInfo
+				var srt, vtt http.File
 
 				file, err := root.Open(r.URL.Path)
 				if err != nil {
 					// TODO: handle not found / other error
 					return
 				}
-				log.Printf("open videoplayer checkpoint 2")
 
-				if stat, err := file.Stat(); err != nil {
+				if stat, err = file.Stat(); err != nil {
 					// TODO: handle not found / other error
 					return
 				} else if !stat.Mode().IsRegular() {
 					// TODO: not a file
 					return
 				}
-				log.Printf("open videoplayer checkpoint 3")
 
 				// TODO: detect if the file is an mp4 / ogg / ogv / vp8 / vp9
 				// find if there is srt / webvtt file in the same folder
 				subtitles := make([]map[string]string, 0, 1)
 				fileBasename := strings.TrimSuffix(r.URL.Path, filepath.Ext(r.URL.Path))
-				log.Printf("fileBasename: %s", fileBasename)
 
-				if vtt, err := root.Open(fileBasename + ".vtt"); err == nil {
-					if stat, err := vtt.Stat(); err == nil && !stat.Mode().IsDir() {
+				if vtt, err = root.Open(fileBasename + ".vtt"); err == nil {
+					if stat, err = vtt.Stat(); err == nil && !stat.Mode().IsDir() {
 						subtitles = append(subtitles, map[string]string{
 							"Path":     fileBasename + ".vtt",
 							"Language": "en",
@@ -96,8 +95,8 @@ func ServeVideo(root http.FileSystem) midway.Middleware {
 					}
 					vtt.Close()
 				}
-				if srt, err := root.Open(fileBasename + ".srt"); err == nil {
-					if stat, err := srt.Stat(); err == nil && !stat.Mode().IsDir() {
+				if srt, err = root.Open(fileBasename + ".srt"); err == nil {
+					if stat, err = srt.Stat(); err == nil && !stat.Mode().IsDir() {
 						subtitles = append(subtitles, map[string]string{
 							"Path":     fileBasename + ".srt?mode=vtt",
 							"Language": "en",

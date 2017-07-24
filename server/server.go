@@ -205,10 +205,42 @@ func (fs *fileServer) ReadIndex(path string) (f http.File, err error) {
 
 func listFiles(w http.ResponseWriter, base string, files []os.FileInfo) {
 	w.Header().Add("Content-Type", "text/html; charset=utf-8")
-	tplIndex.Execute(w, map[string]interface{}{
+	err := tplIndex.Execute(w, map[string]interface{}{
 		"Stylesheets": stylesheets,
 		"Scripts":     scripts,
-		"Files":       files,
+		"Files":       mapFiles(files),
 		"Base":        base,
 	})
+	if err != nil {
+		log.Printf("err: %#v", err.Error())
+	}
+}
+
+type fileInfo struct {
+	Name  string
+	Path  string
+	IsDir bool
+}
+
+func mapFiles(in []os.FileInfo) (out []fileInfo) {
+	out = make([]fileInfo, len(in))
+	for i := 0; i < len(in); i++ {
+		switch strings.ToLower(path.Ext(in[i].Name())) {
+		case ".mkv":
+			fallthrough
+		case ".mp4":
+			fallthrough
+		case ".webm":
+			out[i].Name = in[i].Name()
+			out[i].Path = in[i].Name() + "?mode=videoplayer"
+			out[i].IsDir = in[i].IsDir()
+		default:
+			out[i].Name = in[i].Name()
+			out[i].Path = in[i].Name()
+			out[i].IsDir = in[i].IsDir()
+		}
+	}
+
+	log.Printf("out = %#v", out)
+	return
 }

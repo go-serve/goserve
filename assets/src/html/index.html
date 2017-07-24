@@ -15,9 +15,9 @@
 	{{ range $file := .Files }}
 		<li>
 			{{ if $file.IsDir }}
-				<a href="{{ joinPath $base $file.Name }}/">{{ $file.Name }}/</a>
+				<a href="{{ joinPath $base $file.Path }}/">{{ $file.Name }}/</a>
 			{{ else }}
-				<a href="{{ joinPath $base $file.Name }}">{{ $file.Name }}</a>
+				<a href="{{ joinPath $base $file.Path }}">{{ $file.Name }}</a>
 			{{ end }}
 		</li>
 	{{ end }}
