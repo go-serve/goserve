@@ -173,6 +173,9 @@ func statsEndpoint(ctx context.Context, req interface{}) (stats interface{}, err
 
 func listEndpoint(ctx context.Context, req interface{}) (resp interface{}, err error) {
 	path := req.(string)
+	if path == "" {
+		path = "."
+	}
 
 	// TODO: build the absolute file / dir path for stat and open
 	stat, err := os.Stat(path)
@@ -228,11 +231,15 @@ func listEndpoint(ctx context.Context, req interface{}) (resp interface{}, err e
 		list := make([]FileInfo, listLen)
 		for i := 0; i < listLen; i++ {
 			item := files[i]
+			itemPath := path + "/" + item.Name()
+			if path == "." {
+				itemPath = "/" + item.Name()
+			}
 			if item.Mode().IsRegular() {
 				list[i] = FileInfo{
 					Name:  item.Name(),
 					Type:  "file",
-					Path:  path + "/" + item.Name(),
+					Path:  itemPath,
 					Size:  item.Size(),
 					MTime: item.ModTime(),
 				}
@@ -240,14 +247,14 @@ func listEndpoint(ctx context.Context, req interface{}) (resp interface{}, err e
 				list[i] = FileInfo{
 					Name:  item.Name(),
 					Type:  "directory",
-					Path:  path + "/" + item.Name(),
+					Path:  itemPath,
 					MTime: item.ModTime(),
 				}
 			} else {
 				list[i] = FileInfo{
 					Name: item.Name(),
 					Type: "other",
-					Path: path + "/" + item.Name(),
+					Path: itemPath,
 				}
 			}
 		}
@@ -340,6 +347,11 @@ func ServeAPI(path string, root http.FileSystem) midway.Middleware {
 				// listing files in directory
 				if strings.HasPrefix(r.URL.Path, "lists/") {
 					r.URL.Path = r.URL.Path[6:]
+					handleList(w, r)
+					return
+				}
+				if r.URL.Path == "lists" {
+					r.URL.Path = r.URL.Path[5:]
 					handleList(w, r)
 					return
 				}
