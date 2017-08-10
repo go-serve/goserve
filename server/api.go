@@ -13,6 +13,12 @@ import (
 	"github.com/go-midway/midway"
 )
 
+// Link contains a HATEOAS hypermedia reference URL
+type Link struct {
+	Rel  string `json:"rel"`
+	Href string `json:"href"`
+}
+
 // FileInfo is a JSON display of a subset of os.FileInfo information
 type FileInfo struct {
 	Name  string    `json:"name"`
@@ -20,6 +26,7 @@ type FileInfo struct {
 	Type  string    `json:"type"`
 	Size  int64     `json:"size,omitempty"`
 	MTime time.Time `json:"mtime,omitempty"`
+	Links []Link    `json:"links,omitempty"`
 }
 
 // FileStat stores and display a file's information as JSON
@@ -215,26 +222,25 @@ func listEndpoint(ctx context.Context, req interface{}) (resp interface{}, err e
 		}
 
 		// sort according to query
-		// TODO: store sort in context and retrieve it here
+		epCtx := getEndpointContext(ctx)
+		s := epCtx.Sort
+		if s == "" {
+			s = "-mtime"
+		}
 		// TODO: rewrite with go-linq
-		/*
-			s := r.URL.Query().Get("sort")
-			if s == "" {
-				// default sort order: by mtime, desc
-				s = "-mtime"
-			}
-		*/
-		s := "-mtime"
 		QuerySort(s, files) // TODO: add error reporting here
 
 		listLen := len(files)
 		list := make([]FileInfo, listLen)
 		for i := 0; i < listLen; i++ {
 			item := files[i]
+
+			// parse item URL
 			itemPath := path + "/" + item.Name()
 			if path == "." {
-				itemPath = "/" + item.Name()
+				itemPath = item.Name()
 			}
+
 			if item.Mode().IsRegular() {
 				list[i] = FileInfo{
 					Name:  item.Name(),
@@ -242,6 +248,16 @@ func listEndpoint(ctx context.Context, req interface{}) (resp interface{}, err e
 					Path:  itemPath,
 					Size:  item.Size(),
 					MTime: item.ModTime(),
+					Links: []Link{
+						{
+							Rel:  "self",
+							Href: epCtx.Scheme + "://" + epCtx.Host + "/" + itemPath,
+						},
+						{
+							Rel:  "stat",
+							Href: epCtx.Scheme + "://" + epCtx.Host + "/_goserve/api/stats/" + itemPath,
+						},
+					},
 				}
 			} else if item.IsDir() {
 				list[i] = FileInfo{
@@ -249,12 +265,36 @@ func listEndpoint(ctx context.Context, req interface{}) (resp interface{}, err e
 					Type:  "directory",
 					Path:  itemPath,
 					MTime: item.ModTime(),
+					Links: []Link{
+						{
+							Rel:  "self",
+							Href: epCtx.Scheme + "://" + epCtx.Host + "/" + itemPath,
+						},
+						{
+							Rel:  "stat",
+							Href: epCtx.Scheme + "://" + epCtx.Host + "/_goserve/api/stats/" + itemPath,
+						},
+						{
+							Rel:  "list",
+							Href: epCtx.Scheme + "://" + epCtx.Host + "/_goserve/api/lists/" + itemPath,
+						},
+					},
 				}
 			} else {
 				list[i] = FileInfo{
 					Name: item.Name(),
 					Type: "other",
 					Path: itemPath,
+					Links: []Link{
+						{
+							Rel:  "self",
+							Href: epCtx.Scheme + "://" + epCtx.Host + "/" + itemPath,
+						},
+						{
+							Rel:  "stat",
+							Href: epCtx.Scheme + "://" + epCtx.Host + "/_goserve/api/stats/" + itemPath,
+						},
+					},
 				}
 			}
 		}
@@ -275,6 +315,11 @@ func handleEndpoint(endpoint func(ctx context.Context, req interface{}) (resp in
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := context.Background()
+
+		// prepare context
+		if r != nil {
+			ctx = withEndpointContext(ctx, r)
+		}
 
 		// handle path request
 		resp, err := endpoint(ctx, r.URL.Path)
