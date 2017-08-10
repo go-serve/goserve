@@ -370,6 +370,7 @@ func ServeAPI(path string, root http.FileSystem) midway.Middleware {
 	// wrap endpoints
 	handleStats := handleEndpoint(statsEndpoint)
 	handleList := handleEndpoint(listEndpoint)
+	handleGraphQL := GraphQLHandler()
 
 	return func(inner http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -377,6 +378,11 @@ func ServeAPI(path string, root http.FileSystem) midway.Middleware {
 			// serve API endpoint
 			if r.URL.Path == path {
 				http.Redirect(w, r, pathWithSlash, http.StatusMovedPermanently)
+				return
+			}
+			if r.URL.Path == path+"/graphql" {
+				graphCtx := withFilesystem(withEndpointContext(r.Context(), r), root)
+				handleGraphQL.ServeHTTP(w, r.WithContext(graphCtx))
 				return
 			}
 			if strings.HasPrefix(r.URL.Path, pathWithSlash) {

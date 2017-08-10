@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"net/url"
 )
@@ -11,6 +10,7 @@ type contextKey int
 
 const (
 	ctxKeyEndpointContext contextKey = iota
+	ctxKeyFS
 )
 
 type endpointContext struct {
@@ -18,6 +18,7 @@ type endpointContext struct {
 	Host   string
 	Scheme string
 	Query  url.Values
+	FS     http.FileSystem
 }
 
 func withEndpointContext(parent context.Context, r *http.Request) context.Context {
@@ -31,11 +32,19 @@ func withEndpointContext(parent context.Context, r *http.Request) context.Contex
 		Scheme: scheme,
 		Query:  r.URL.Query(),
 	}
-	log.Printf("r: %#v", r.URL.Hostname())
 	return context.WithValue(parent, ctxKeyEndpointContext, epCtx)
 }
 
 func getEndpointContext(ctx context.Context) (epCtx *endpointContext) {
 	epCtx, _ = ctx.Value(ctxKeyEndpointContext).(*endpointContext)
+	return
+}
+
+func withFilesystem(parent context.Context, fs http.FileSystem) context.Context {
+	return context.WithValue(parent, ctxKeyFS, fs)
+}
+
+func getFilesystem(ctx context.Context) (fs http.FileSystem) {
+	fs, _ = ctx.Value(ctxKeyFS).(http.FileSystem)
 	return
 }
