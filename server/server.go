@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/go-midway/midway"
 	"github.com/go-serve/goserve/assets"
+	"github.com/go-serve/goserve/server/api"
 
 	"errors"
 	"io/ioutil"
@@ -109,7 +110,7 @@ func FileServer(root http.FileSystem) http.Handler {
 		fileSrv: http.FileServer(root),
 	}
 	middlewares := midway.Chain(
-		ServeAPI("/_goserve/api", root),
+		api.ServeAPI("/_goserve/api", root),
 		ServeAssets("/_goserve/assets", assets.FileSystem()),
 		ServeVideo(root),
 		ServeSrt(root),
@@ -145,7 +146,7 @@ func (fs *fileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				// default sort order: by mtime, desc
 				s = "-mtime"
 			}
-			QuerySort(s, files) // TODO: add error reporting here
+			api.QuerySort(s, files) // TODO: add error reporting here
 
 			// list the files
 			listFiles(w, r.URL.Path, files)
