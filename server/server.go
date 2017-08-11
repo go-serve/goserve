@@ -227,8 +227,6 @@ func mapFiles(in []os.FileInfo) (out []fileInfo) {
 	out = make([]fileInfo, len(in))
 	for i := 0; i < len(in); i++ {
 		switch strings.ToLower(path.Ext(in[i].Name())) {
-		case ".mkv":
-			fallthrough
 		case ".mp4":
 			fallthrough
 		case ".webm":
@@ -241,7 +239,5 @@ func mapFiles(in []os.FileInfo) (out []fileInfo) {
 			out[i].IsDir = in[i].IsDir()
 		}
 	}
-
-	log.Printf("out = %#v", out)
 	return
 }
