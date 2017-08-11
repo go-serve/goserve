@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -258,27 +257,55 @@ func getSchema() (graphql.Schema, error) {
 	return graphql.NewSchema(schemaConfig)
 }
 
+type graphPostRequest struct {
+	Query         string                 `json:"query"`
+	OperationName string                 `json:"operationName"`
+	Variables     map[string]interface{} `json:"variables"`
+}
+
 func deccodeGraphRequest(ctx context.Context, r *http.Request) (req interface{}, err error) {
+	vreq := &graphPostRequest{}
 	switch r.Method {
 	case "GET":
-		req = r.URL.Query().Get("query")
-		if req == "" {
+
+		// get query
+		vreq.Query = r.URL.Query().Get("query")
+		if vreq.Query == "" {
 			err = newInputError(fmt.Errorf("requires argument 'query' in GET request"))
 			return
 		}
+
+		// get operation name
+		vreq.OperationName = r.URL.Query().Get("operationName")
+
+		// get variables
+		if variables := r.URL.Query().Get("variables"); variables != "" {
+			err = json.Unmarshal([]byte(variables), vreq.Variables)
+		}
+		if err != nil {
+			err = newInputError(fmt.Errorf("error decoding 'variables' in GET request"))
+			return
+		}
+
+		// return request
+		req = vreq
+		return
 	case "POST":
 		contentType := r.Header.Get("Content-Type")
 		switch contentType {
 		case "application/json":
 			fallthrough
 		default:
-			var content []byte
-			content, err = ioutil.ReadAll(r.Body)
+			dec := json.NewDecoder(r.Body)
+			err = dec.Decode(vreq)
 			if err != nil {
 				err = newInputError(err)
 				return
 			}
-			req = string(content)
+
+			// return request
+			req = vreq
+			return
 		}
 	}
 	return
@@ -316,15 +343,17 @@ func graphEndpoint(ctx context.Context, req interface{}) (resp interface{}, err 
 	}
 
 	// get request string
-	reqStr, ok := req.(string)
+	vreq, ok := req.(*graphPostRequest)
 	if !ok {
 		err = newInputError(fmt.Errorf("graphEndpoint expect req to be a string, got %#v instead", req))
 		return
 	}
 	params := graphql.Params{
-		Schema:        schema,
-		RequestString: reqStr,
-		Context:       ctx,
+		Schema:         schema,
+		RequestString:  vreq.Query,
+		Context:        ctx,
+		OperationName:  vreq.OperationName,
+		VariableValues: vreq.Variables,
 	}
 	graphResp := graphql.Do(params)
 	if len(graphResp.Errors) > 0 {
