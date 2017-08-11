@@ -79,7 +79,7 @@ module.exports = {
     rules: [
       {
         test: /\.(js|jsx)$/,
-        include: path.join(__dirname, 'dist', 'src', 'js'),
+        include: path.join(__dirname, 'assets', 'src', 'js'),
         use: [
           'react-hot-loader',
           'babel-loader',
