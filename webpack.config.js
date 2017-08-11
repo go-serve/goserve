@@ -31,7 +31,7 @@ const plugins = isDev ? [
     cssProcessorOptions: {
       discardComments: {
         removeAll: true,
-      }
+      },
     },
   }),
   new UglifyJSPlugin(),
@@ -65,7 +65,7 @@ const scriptHost = getScriptHost();
 
 module.exports = {
   entry: {
-    'app': [
+    app: [
       'babel-polyfill',
       './assets/src/js/app.js',
     ],
@@ -87,6 +87,9 @@ module.exports = {
       },
       sassRule,
     ],
+  },
+  resolve: {
+    extensions: ['.js', '.jsx'],
   },
   externals,
   plugins,
