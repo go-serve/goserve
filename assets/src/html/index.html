@@ -8,20 +8,8 @@
 {{ end }}
 </head>
 <body>
-<section>
-	<h1>Index of {{ .Base }}</h1>
-	<ul class="listing">
-	{{ $base := .Base }}
-	{{ range $file := .Files }}
-		<li>
-			{{ if $file.IsDir }}
-				<a href="{{ joinPath $base $file.Path }}/">{{ $file.Name }}/</a>
-			{{ else }}
-				<a href="{{ joinPath $base $file.Path }}">{{ $file.Name }}</a>
-			{{ end }}
-		</li>
-	{{ end }}
-	</ul>
+<section id="app">
+	<div class="loading">Loading...</div>
 </section>
 {{ range $file := .Scripts }}
 <script src="{{ $file }}"></script>
