@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/graphql-go/graphql"
@@ -27,6 +28,8 @@ func graphStatFile(ctx context.Context, path string) (resp *FileInfo, err error)
 	}
 	defer fsEntry.Close()
 
+	log.Printf("path: %#v", path)
+
 	stat, err := fsEntry.Stat()
 	if err != nil {
 		err = newError(http.StatusBadRequest, err)
@@ -43,7 +46,7 @@ func graphStatFile(ctx context.Context, path string) (resp *FileInfo, err error)
 	resp = &FileInfo{
 		Name:  stat.Name(),
 		Type:  statType,
-		Path:  path,
+		Path:  "/" + path,
 		Size:  stat.Size(),
 		MTime: stat.ModTime(),
 	}
@@ -115,7 +118,7 @@ func graphListFiles(ctx context.Context, path string) (list []*FileInfo, err err
 
 			// parse item URL
 			itemPath := path + "/" + item.Name()
-			if path == "." {
+			if path == "." || path == "" {
 				itemPath = item.Name()
 			}
 
@@ -129,7 +132,7 @@ func graphListFiles(ctx context.Context, path string) (list []*FileInfo, err err
 			list[i] = &FileInfo{
 				Name:  item.Name(),
 				Type:  itemType,
-				Path:  itemPath,
+				Path:  "/" + itemPath,
 				Size:  item.Size(),
 				MTime: item.ModTime(),
 			}
@@ -230,6 +233,7 @@ func getSchema() (graphql.Schema, error) {
 				},
 				Resolve: func(p graphql.ResolveParams) (resp interface{}, err error) {
 					path := p.Args["path"].(string)
+					path = strings.TrimLeft(path, "/")
 					resp, err = graphListFiles(p.Context, path)
 					return
 				},
@@ -244,6 +248,7 @@ func getSchema() (graphql.Schema, error) {
 				},
 				Resolve: func(p graphql.ResolveParams) (resp interface{}, err error) {
 					path := p.Args["path"].(string)
+					path = strings.TrimLeft(path, "/")
 					resp, err = graphStatFile(p.Context, path)
 					return
 				},
