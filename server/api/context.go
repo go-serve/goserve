@@ -11,6 +11,7 @@ type contextKey int
 const (
 	ctxKeyEndpointContext contextKey = iota
 	ctxKeyFS
+	ctxKeyGraphVariables
 )
 
 type endpointContext struct {
@@ -46,5 +47,14 @@ func withFilesystem(parent context.Context, fs http.FileSystem) context.Context 
 
 func getFilesystem(ctx context.Context) (fs http.FileSystem) {
 	fs, _ = ctx.Value(ctxKeyFS).(http.FileSystem)
+	return
+}
+
+func withGraphArgs(parent context.Context, args map[string]interface{}) context.Context {
+	return context.WithValue(parent, ctxKeyGraphVariables, args)
+}
+
+func getGraphArgs(ctx context.Context) (args map[string]interface{}) {
+	args, _ = ctx.Value(ctxKeyGraphVariables).(map[string]interface{})
 	return
 }

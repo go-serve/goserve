@@ -11,6 +11,7 @@ import (
 
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/graphql-go/graphql"
+	linq "gopkg.in/ahmetb/go-linq.v3"
 )
 
 func graphStatFile(ctx context.Context, path string) (resp *FileInfo, err error) {
@@ -27,8 +28,6 @@ func graphStatFile(ctx context.Context, path string) (resp *FileInfo, err error)
 		return
 	}
 	defer fsEntry.Close()
-
-	log.Printf("path: %#v", path)
 
 	stat, err := fsEntry.Stat()
 	if err != nil {
@@ -56,6 +55,7 @@ func graphStatFile(ctx context.Context, path string) (resp *FileInfo, err error)
 
 func graphListFiles(ctx context.Context, path string) (list []*FileInfo, err error) {
 	fs := getFilesystem(ctx)
+	args := getGraphArgs(ctx)
 
 	// replace os.Stat with FileSystem read
 	fsEntry, err := fs.Open(path)
@@ -102,15 +102,6 @@ func graphListFiles(ctx context.Context, path string) (list []*FileInfo, err err
 			return
 		}
 
-		// sort according to query
-		epCtx := getEndpointContext(ctx)
-		s := epCtx.Sort
-		if s == "" {
-			s = "-mtime"
-		}
-		// TODO: rewrite with go-linq
-		//QuerySort(s, files) // TODO: add error reporting here
-
 		listLen := len(files)
 		list = make([]*FileInfo, listLen)
 		for i := 0; i < listLen; i++ {
@@ -137,6 +128,67 @@ func graphListFiles(ctx context.Context, path string) (list []*FileInfo, err err
 				MTime: item.ModTime(),
 			}
 		}
+
+		// sort list according to query
+		s := "-mtime"
+		if args != nil {
+			if argSort, ok := args["sort"]; ok && argSort != "" {
+				argSortString, ok := argSort.(string)
+				if ok {
+					s = argSortString
+				}
+			}
+		}
+		ss := strings.Split(s, ",")
+
+		op := linq.From(list)
+		var orderedOp linq.OrderedQuery
+
+		for i, sort := range ss {
+
+			// determine order direction
+			isAsc := true
+			if sort[0] == '-' {
+				isAsc = false
+				sort = sort[1:]
+			}
+
+			// determine field
+			var selectorFn interface{}
+			switch sort {
+			case "mtime":
+				selectorFn = func(fi *FileInfo) int64 {
+					return fi.MTime.Unix()
+				}
+			case "name":
+				selectorFn = func(fi *FileInfo) string {
+					return strings.ToLower(fi.Name)
+				}
+			case "type":
+				selectorFn = func(fi *FileInfo) string {
+					return fi.Type
+				}
+			}
+
+			// do first order sorting
+			if i == 0 {
+				if isAsc {
+					orderedOp = op.OrderByT(selectorFn)
+					continue
+				}
+				orderedOp = op.OrderByDescendingT(selectorFn)
+				continue
+			}
+
+			// do later order sorting
+			if isAsc {
+				orderedOp = orderedOp.ThenByT(selectorFn)
+				continue
+			}
+			orderedOp = orderedOp.ThenByDescendingT(selectorFn)
+		}
+
+		orderedOp.ToSlice(&list)
 		return
 	}
 	err = NewStatError(http.StatusBadRequest, path)
@@ -230,11 +282,14 @@ func getSchema() (graphql.Schema, error) {
 					"path": &graphql.ArgumentConfig{
 						Type: graphql.NewNonNull(graphql.String),
 					},
+					"sort": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
 				},
 				Resolve: func(p graphql.ResolveParams) (resp interface{}, err error) {
 					path := p.Args["path"].(string)
 					path = strings.TrimLeft(path, "/")
-					resp, err = graphListFiles(p.Context, path)
+					resp, err = graphListFiles(withGraphArgs(p.Context, p.Args), path)
 					return
 				},
 			},
