@@ -1,52 +1,31 @@
 import React from 'react';
-import { graphql, gql } from 'react-apollo';
 import { Link } from 'react-router-dom';
 
-export const Query = gql`
-  query FileListQuery ($path: String = "/", $sort: String = "-mtime") {
-    self: stat(path:$path){
-      name
-      path
-      type
-    }
-    children: list(path:$path, sort:$sort){
-      name
-      path
-      type
-    }
-  }
-`;
+const renderDirectoryLink = (dir) => <Link to={`${dir.path}`}>{dir.name}/</Link>;
+const renderVideoLink = (file) => <Link to={`${file.path}`}>{file.name}</Link>;
+const renderNormalLink = (file) => <a href={`${file.path}`}>{file.name}</a>;
+const renderLink = (item) => {
+  if (item.type === "directory") return renderDirectoryLink(item);
+  if (item.mime === "video/mp4") return renderVideoLink(item);
+  return renderNormalLink(item);
+}
 
 const FileList = function(props) {
-  const { className="filelist", path, data: { self, children=[] } } = props;
-  console.log("props.path", path, "self", self, "children", children);
-  if (typeof self === 'undefined') return null;
+  const { className="filelist", path, self, children=[] } = props;
+  console.log("FileList:: props.path", path, "self", self, "children", children);
+  if (typeof self === 'undefined' || self === null) return null;
   return (
     <div className={ className }>
-      <h1>{ `Index of ${self.path}` }</h1>
+      <h1>{ `Index of ${(self.name === '/') ? '' : self.name}/` }</h1>
       <ul className="listing">
         {children.map((child) => (
-          (child.type === "directory") ?
-            (<li key={child.path}>
-              <Link to={`${child.path}`}>{child.name}/</Link>
-            </li>) :
-            (<li key={child.path}>
-              <a href={`${child.path}`}>{child.name}</a>
-            </li>)
+          <li key={child.path}>
+            {renderLink(child)}
+          </li>
         ))}
       </ul>
     </div>
   );
 }
 
-export default graphql(Query, {
-  options: ({path = "/", sort="-mtime"}) => {
-    const options = {
-      variables: {
-        path,
-        sort,
-      },
-    };
-    return options;
-  },
-})(FileList);
+export default FileList;

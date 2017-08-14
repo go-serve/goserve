@@ -5764,7 +5764,7 @@ promise@^7.1.1:
   dependencies:
     asap "~2.0.3"
 
-prop-types@^15.5.10, prop-types@^15.5.4, prop-types@^15.5.8:
+prop-types@^15.5.10, prop-types@^15.5.4, prop-types@^15.5.6, prop-types@^15.5.8:
   version "15.5.10"
   resolved "https://registry.yarnpkg.com/prop-types/-/prop-types-15.5.10.tgz#2797dfc3126182e3a95e3dfbb2e893ddd7456154"
   dependencies:
@@ -5882,6 +5882,13 @@ react-apollo@^1.4.12:
     lodash.pick "^4.4.0"
     object-assign "^4.0.1"
     prop-types "^15.5.8"
+
+react-body-classname@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/react-body-classname/-/react-body-classname-1.2.0.tgz#25ee56a46e2f8326dc5d688c4b658de081753957"
+  dependencies:
+    prop-types "^15.5.6"
+    react-side-effect "^1.1.0"
 
 react-dom-factories@^1.0.0:
   version "1.0.1"
