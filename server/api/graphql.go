@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 
 	httptransport "github.com/go-kit/kit/transport/http"
@@ -39,6 +40,7 @@ func graphStatFile(ctx context.Context, filepath string) (resp *FileInfo, err er
 
 	statType := "other"
 	mimeType := ""
+	statName := stat.Name()
 	if stat.Mode().IsRegular() {
 		statType = "file"
 		mimeType = mime.TypeByExtension(strings.ToLower(path.Ext(stat.Name())))
@@ -46,8 +48,12 @@ func graphStatFile(ctx context.Context, filepath string) (resp *FileInfo, err er
 		statType = "directory"
 	}
 
+	if filepath == "" {
+		statName = "/"
+	}
+
 	resp = &FileInfo{
-		Name:  stat.Name(),
+		Name:  statName,
 		Type:  statType,
 		Mime:  mimeType,
 		Path:  "/" + filepath,
@@ -60,7 +66,8 @@ func graphStatFile(ctx context.Context, filepath string) (resp *FileInfo, err er
 
 func graphListFiles(ctx context.Context, filepath string) (list []*FileInfo, err error) {
 	fs := getFilesystem(ctx)
-	args := getGraphArgs(ctx)
+	graphCtx := getGraphContext(ctx)
+	args := graphCtx.Args
 
 	// replace os.Stat with FileSystem read
 	fsEntry, err := fs.Open(filepath)
@@ -137,20 +144,61 @@ func graphListFiles(ctx context.Context, filepath string) (list []*FileInfo, err
 			}
 		}
 
-		// sort list according to query
 		s := "-mtime"
+		nameLike := ""
+		nameLikeMe := false
+
 		if args != nil {
+			// sort list according to query
 			if argSort, ok := args["sort"]; ok && argSort != "" {
 				argSortString, ok := argSort.(string)
 				if ok {
 					s = argSortString
 				}
 			}
+			// filters: nameLike
+			if argNameLike, ok := args["nameLike"]; ok && argNameLike != "" {
+				argNameLikeStr := argNameLike.(string)
+				nameLike = argNameLikeStr
+			}
+			// filters: nameLikeMe
+			if argNameLikeMe, ok := args["nameLikeMe"]; ok && argNameLikeMe != "" {
+				nameLikeMe, _ = argNameLikeMe.(bool)
+			}
 		}
+
 		ss := strings.Split(s, ",")
 
 		op := linq.From(list)
 		var orderedOp linq.OrderedQuery
+
+		if nameLikeMe && graphCtx.Source != nil {
+			src := graphCtx.Source.(*FileInfo)
+			nameBase := path.Base(src.Name)
+			if src.Type != "directory" {
+				nameBase = nameBase[:len(src.Name)-len(path.Ext(src.Name))]
+			}
+
+			// add where to linq
+			op = op.WhereT(func(fi *FileInfo) bool {
+				return strings.HasPrefix(fi.Name, nameBase)
+			})
+		}
+
+		if nameLike != "" {
+			var nameLikeRE *regexp.Regexp
+			nameLike = strings.Replace(nameLike, "*", ".*", -1)
+			nameLikeRE, err = regexp.Compile(nameLike)
+			if err != nil {
+				err = newError(http.StatusBadRequest, err)
+				return
+			}
+
+			// add where to linq
+			op = op.WhereT(func(fi *FileInfo) bool {
+				return nameLikeRE.MatchString(fi.Name)
+			})
+		}
 
 		for i, sort := range ss {
 
@@ -199,7 +247,6 @@ func graphListFiles(ctx context.Context, filepath string) (list []*FileInfo, err
 		orderedOp.ToSlice(&list)
 		return
 	}
-	err = NewStatError(http.StatusBadRequest, filepath)
 	return
 }
 
@@ -268,14 +315,47 @@ func getSchema() (graphql.Schema, error) {
 
 	fileInfoType.AddFieldConfig("children", &graphql.Field{
 		Type: fileInfosType,
+		Args: graphql.FieldConfigArgument{
+			"nameLike": &graphql.ArgumentConfig{
+				Type:        graphql.String,
+				Description: "string, with wildcard *, to match file name",
+			},
+			"nameLikeMe": &graphql.ArgumentConfig{
+				Type:        graphql.Boolean,
+				Description: "bool, if the children has a filename (without extension) prefixed with name of self",
+			},
+		},
 		Resolve: func(p graphql.ResolveParams) (resp interface{}, err error) {
 			switch src := p.Source.(type) {
 			case *FileInfo:
-				if src.Type == "directory" {
-					resp, err = graphListFiles(p.Context, src.Path)
-				} else {
-					resp = []int{}
-				}
+				resp, err = graphListFiles(withGraphContext(p.Context, &graphContext{
+					Source: p.Source,
+					Args:   p.Args,
+				}), src.Path)
+			}
+			return
+		},
+	})
+	fileInfoType.AddFieldConfig("siblings", &graphql.Field{
+		Type: fileInfosType,
+		Args: graphql.FieldConfigArgument{
+			"nameLike": &graphql.ArgumentConfig{
+				Type:        graphql.String,
+				Description: "string, with wildcard *, to match file name",
+			},
+			"nameLikeMe": &graphql.ArgumentConfig{
+				Type:        graphql.Boolean,
+				Description: "bool, if the sibling has a filename (without extension) prefixed with name of self",
+			},
+		},
+		Resolve: func(p graphql.ResolveParams) (resp interface{}, err error) {
+			switch src := p.Source.(type) {
+			case *FileInfo:
+				dir := strings.TrimLeft(path.Dir(src.Path), "/")
+				resp, err = graphListFiles(withGraphContext(p.Context, &graphContext{
+					Source: p.Source,
+					Args:   p.Args,
+				}), dir)
 				return
 			}
 			return
@@ -290,6 +370,10 @@ func getSchema() (graphql.Schema, error) {
 				Type:        fileInfosType,
 				Description: "List of files and directories within a directory of given path",
 				Args: graphql.FieldConfigArgument{
+					"nameLike": &graphql.ArgumentConfig{
+						Type:        graphql.String,
+						Description: "string, with wildcard *, to match file name",
+					},
 					"path": &graphql.ArgumentConfig{
 						Type: graphql.NewNonNull(graphql.String),
 					},
@@ -300,7 +384,9 @@ func getSchema() (graphql.Schema, error) {
 				Resolve: func(p graphql.ResolveParams) (resp interface{}, err error) {
 					path := p.Args["path"].(string)
 					path = strings.TrimLeft(path, "/")
-					resp, err = graphListFiles(withGraphArgs(p.Context, p.Args), path)
+					resp, err = graphListFiles(withGraphContext(p.Context, &graphContext{
+						Args: p.Args,
+					}), path)
 					return
 				},
 			},
