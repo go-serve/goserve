@@ -24,6 +24,7 @@ type FileInfo struct {
 	Name  string    `json:"name"`
 	Path  string    `json:"path,omitempty"`
 	Type  string    `json:"type"`
+	Mime  string    `json:"mime,omitempty"`
 	Size  int64     `json:"size,omitempty"`
 	MTime time.Time `json:"mtime,omitempty"`
 	Links []Link    `json:"links,omitempty"`

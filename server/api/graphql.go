@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"mime"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 
 	httptransport "github.com/go-kit/kit/transport/http"
@@ -14,14 +16,14 @@ import (
 	linq "gopkg.in/ahmetb/go-linq.v3"
 )
 
-func graphStatFile(ctx context.Context, path string) (resp *FileInfo, err error) {
+func graphStatFile(ctx context.Context, filepath string) (resp *FileInfo, err error) {
 
 	fs := getFilesystem(ctx)
 
 	// replace os.Stat with FileSystem read
-	fsEntry, err := fs.Open(path)
+	fsEntry, err := fs.Open(filepath)
 	if os.IsNotExist(err) {
-		err = NewStatError(http.StatusNotFound, path)
+		err = NewStatError(http.StatusNotFound, filepath)
 		return
 	} else if err != nil {
 		err = newError(http.StatusBadRequest, err)
@@ -36,8 +38,10 @@ func graphStatFile(ctx context.Context, path string) (resp *FileInfo, err error)
 	}
 
 	statType := "other"
+	mimeType := ""
 	if stat.Mode().IsRegular() {
 		statType = "file"
+		mimeType = mime.TypeByExtension(strings.ToLower(path.Ext(stat.Name())))
 	} else if stat.Mode().IsDir() {
 		statType = "directory"
 	}
@@ -45,7 +49,8 @@ func graphStatFile(ctx context.Context, path string) (resp *FileInfo, err error)
 	resp = &FileInfo{
 		Name:  stat.Name(),
 		Type:  statType,
-		Path:  "/" + path,
+		Mime:  mimeType,
+		Path:  "/" + filepath,
 		Size:  stat.Size(),
 		MTime: stat.ModTime(),
 	}
@@ -53,14 +58,14 @@ func graphStatFile(ctx context.Context, path string) (resp *FileInfo, err error)
 	return
 }
 
-func graphListFiles(ctx context.Context, path string) (list []*FileInfo, err error) {
+func graphListFiles(ctx context.Context, filepath string) (list []*FileInfo, err error) {
 	fs := getFilesystem(ctx)
 	args := getGraphArgs(ctx)
 
 	// replace os.Stat with FileSystem read
-	fsEntry, err := fs.Open(path)
+	fsEntry, err := fs.Open(filepath)
 	if os.IsNotExist(err) {
-		err = NewStatError(http.StatusNotFound, path)
+		err = NewStatError(http.StatusNotFound, filepath)
 		return
 	} else if err != nil {
 		err = newError(http.StatusBadRequest, err)
@@ -78,7 +83,7 @@ func graphListFiles(ctx context.Context, path string) (list []*FileInfo, err err
 	if err != nil {
 		perr, _ := err.(*os.PathError)
 		if perr.Err.Error() == os.ErrPermission.Error() {
-			err = NewStatError(http.StatusForbidden, path)
+			err = NewStatError(http.StatusForbidden, filepath)
 		}
 		return
 	}
@@ -89,16 +94,16 @@ func graphListFiles(ctx context.Context, path string) (list []*FileInfo, err err
 		var d http.File
 		files := make([]os.FileInfo, 0, 40)
 		// TODO: use FileSystem for file access
-		if d, err = fs.Open(path); err != nil {
-			log.Printf("Error listing path %#v:%s", path, err)
-			err = NewStatError(http.StatusInternalServerError, path)
+		if d, err = fs.Open(filepath); err != nil {
+			log.Printf("Error listing filepath %#v:%s", filepath, err)
+			err = NewStatError(http.StatusInternalServerError, filepath)
 			return
 		}
 		defer d.Close()
 
 		files, err = d.Readdir(0)
 		if err != nil {
-			log.Printf("Error listing path %#v:%s", path, err)
+			log.Printf("Error listing filepath %#v:%s", filepath, err)
 			return
 		}
 
@@ -108,14 +113,16 @@ func graphListFiles(ctx context.Context, path string) (list []*FileInfo, err err
 			item := files[i]
 
 			// parse item URL
-			itemPath := path + "/" + item.Name()
-			if path == "." || path == "" {
+			itemPath := filepath + "/" + item.Name()
+			if filepath == "." || filepath == "" {
 				itemPath = item.Name()
 			}
 
 			itemType := "other"
+			mimeType := ""
 			if item.Mode().IsRegular() {
 				itemType = "file"
+				mimeType = mime.TypeByExtension(strings.ToLower(path.Ext(item.Name())))
 			} else if item.IsDir() {
 				itemType = "directory"
 			}
@@ -123,6 +130,7 @@ func graphListFiles(ctx context.Context, path string) (list []*FileInfo, err err
 			list[i] = &FileInfo{
 				Name:  item.Name(),
 				Type:  itemType,
+				Mime:  mimeType,
 				Path:  "/" + itemPath,
 				Size:  item.Size(),
 				MTime: item.ModTime(),
@@ -191,7 +199,7 @@ func graphListFiles(ctx context.Context, path string) (list []*FileInfo, err err
 		orderedOp.ToSlice(&list)
 		return
 	}
-	err = NewStatError(http.StatusBadRequest, path)
+	err = NewStatError(http.StatusBadRequest, filepath)
 	return
 }
 
@@ -243,6 +251,9 @@ func getSchema() (graphql.Schema, error) {
 				Type: graphql.String,
 			},
 			"type": &graphql.Field{
+				Type: graphql.String,
+			},
+			"mime": &graphql.Field{
 				Type: graphql.String,
 			},
 			"size": &graphql.Field{
