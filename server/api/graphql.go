@@ -66,7 +66,6 @@ func graphStatFile(ctx context.Context, filepath string) (resp *FileInfo, err er
 
 func hasIndex(fs http.FileSystem, filepath string) bool {
 	fileIndex := path.Join(filepath, "index.html")
-	log.Printf("fileIndex: %s", fileIndex)
 	fi, err := fs.Open(fileIndex)
 	if err != nil {
 		return false
@@ -111,7 +110,6 @@ func graphListFiles(ctx context.Context, filepath string) (list []*FileInfo, err
 
 		var d http.File
 		files := make([]os.FileInfo, 0, 40)
-		// TODO: use FileSystem for file access
 		if d, err = fs.Open(filepath); err != nil {
 			log.Printf("Error listing filepath %#v:%s", filepath, err)
 			err = NewStatError(http.StatusInternalServerError, filepath)
