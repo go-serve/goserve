@@ -22,7 +22,7 @@ const App = () => (
           return <main className="path-display-wrapper">
             <PathPreview
               sort={sort}
-              path={window.location.pathname}
+              path={decodeURIComponent(window.location.pathname)}
             />
           </main>;
         }}
