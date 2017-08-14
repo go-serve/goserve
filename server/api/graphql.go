@@ -53,12 +53,13 @@ func graphStatFile(ctx context.Context, filepath string) (resp *FileInfo, err er
 	}
 
 	resp = &FileInfo{
-		Name:  statName,
-		Type:  statType,
-		Mime:  mimeType,
-		Path:  "/" + filepath,
-		Size:  stat.Size(),
-		MTime: stat.ModTime(),
+		Name:     statName,
+		Type:     statType,
+		Mime:     mimeType,
+		HasIndex: hasIndex(fs, filepath),
+		Path:     "/" + filepath,
+		Size:     stat.Size(),
+		MTime:    stat.ModTime(),
 	}
 
 	return
@@ -326,6 +327,20 @@ func getSchema() (graphql.Schema, error) {
 	})
 	fileInfosType := graphql.NewList(fileInfoType)
 
+	fileInfoType.AddFieldConfig("parent", &graphql.Field{
+		Type: fileInfoType,
+		Resolve: func(p graphql.ResolveParams) (resp interface{}, err error) {
+			switch src := p.Source.(type) {
+			case *FileInfo:
+				if src.Path == "" {
+					return []int{}, nil
+				}
+				parentPath := strings.TrimLeft(path.Dir(src.Path), "/")
+				resp, err = graphStatFile(p.Context, parentPath)
+			}
+			return
+		},
+	})
 	fileInfoType.AddFieldConfig("children", &graphql.Field{
 		Type: fileInfosType,
 		Args: graphql.FieldConfigArgument{
