@@ -21,13 +21,14 @@ type Link struct {
 
 // FileInfo is a JSON display of a subset of os.FileInfo information
 type FileInfo struct {
-	Name  string    `json:"name"`
-	Path  string    `json:"path,omitempty"`
-	Type  string    `json:"type"`
-	Mime  string    `json:"mime,omitempty"`
-	Size  int64     `json:"size,omitempty"`
-	MTime time.Time `json:"mtime,omitempty"`
-	Links []Link    `json:"links,omitempty"`
+	Name     string    `json:"name"`
+	Path     string    `json:"path,omitempty"`
+	Type     string    `json:"type"`
+	Mime     string    `json:"mime,omitempty"`
+	HasIndex bool      `json:"hasIndex,omitempty"`
+	Size     int64     `json:"size,omitempty"`
+	MTime    time.Time `json:"mtime,omitempty"`
+	Links    []Link    `json:"links,omitempty"`
 }
 
 // FileStat stores and display a file's information as JSON

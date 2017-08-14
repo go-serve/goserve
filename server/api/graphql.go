@@ -64,6 +64,17 @@ func graphStatFile(ctx context.Context, filepath string) (resp *FileInfo, err er
 	return
 }
 
+func hasIndex(fs http.FileSystem, filepath string) bool {
+	fileIndex := path.Join(filepath, "index.html")
+	log.Printf("fileIndex: %s", fileIndex)
+	fi, err := fs.Open(fileIndex)
+	if err != nil {
+		return false
+	}
+	defer fi.Close()
+	return true
+}
+
 func graphListFiles(ctx context.Context, filepath string) (list []*FileInfo, err error) {
 	fs := getFilesystem(ctx)
 	graphCtx := getGraphContext(ctx)
@@ -135,12 +146,13 @@ func graphListFiles(ctx context.Context, filepath string) (list []*FileInfo, err
 			}
 
 			list[i] = &FileInfo{
-				Name:  item.Name(),
-				Type:  itemType,
-				Mime:  mimeType,
-				Path:  "/" + itemPath,
-				Size:  item.Size(),
-				MTime: item.ModTime(),
+				Name:     item.Name(),
+				Type:     itemType,
+				Mime:     mimeType,
+				HasIndex: hasIndex(fs, itemPath),
+				Path:     "/" + itemPath,
+				Size:     item.Size(),
+				MTime:    item.ModTime(),
 			}
 		}
 
@@ -302,6 +314,9 @@ func getSchema() (graphql.Schema, error) {
 			},
 			"mime": &graphql.Field{
 				Type: graphql.String,
+			},
+			"hasIndex": &graphql.Field{
+				Type: graphql.Boolean,
 			},
 			"size": &graphql.Field{
 				Type: graphql.Int,
