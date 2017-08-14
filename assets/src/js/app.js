@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { ApolloClient, ApolloProvider, createNetworkInterface } from 'react-apollo';
 import { createStore, combineReducers, applyMiddleware, compose } from 'redux';
+import 'url-search-params-polyfill';
 
 import App from './containers/App';
 
