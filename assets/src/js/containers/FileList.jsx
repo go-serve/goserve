@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
+const renderNormalDirectoryLink = (dir) => <a href={`${dir.path}`}>{dir.name}/</a>;
 const renderDirectoryLink = (dir) => <Link to={`${dir.path}`}>{dir.name}/</Link>;
 const renderVideoLink = (file) => <Link to={`${file.path}`}>{file.name}</Link>;
 const renderNormalLink = (file) => <a href={`${file.path}`}>{file.name}</a>;
 const renderLink = (item) => {
+  if (item.type === "directory" && item.hasIndex === true) return renderNormalDirectoryLink(item);
   if (item.type === "directory") return renderDirectoryLink(item);
   if (item.mime === "video/mp4") return renderVideoLink(item);
   return renderNormalLink(item);
@@ -12,7 +14,6 @@ const renderLink = (item) => {
 
 const FileList = function(props) {
   const { className="filelist", path, self, children=[] } = props;
-  console.log("FileList:: props.path", path, "self", self, "children", children);
   if (typeof self === 'undefined' || self === null) return null;
   return (
     <div className={ className }>

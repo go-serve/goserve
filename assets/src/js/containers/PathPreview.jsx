@@ -22,6 +22,7 @@ export const Query = gql`
       path
       type
       mime
+      hasIndex
     }
   }
 `;
