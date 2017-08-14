@@ -3,6 +3,7 @@ import { graphql, gql } from 'react-apollo';
 import BodyClassName from 'react-body-classname';
 import { Helmet } from 'react-helmet';
 
+import Header from './Header';
 import FileList from './FileList';
 import VideoPlayer from './VideoPlayer';
 
@@ -13,8 +14,13 @@ export const Query = gql`
       path
       type
       mime
+      parent {
+        name
+        path
+        hasIndex
+      }
       subtitles: siblings(nameLikeMe: true, nameLike: "*.srt") {
-        path,
+        path
       }
     }
     children: list(path:$path, sort:$sort){
@@ -33,11 +39,14 @@ const PathPreview = function(props) {
   if (self.type === "file" && self.mime === "video/mp4") {
     return (
       <BodyClassName className="page-video">
-        <div className="video-container">
+        <div>
           <Helmet>
             <title>{`${self.name}`}</title>
           </Helmet>
-          <VideoPlayer {...self}/>
+          <Header {...self} />
+          <div className="video-container">
+            <VideoPlayer {...self}/>
+          </div>
         </div>
       </BodyClassName>
     );
@@ -49,6 +58,7 @@ const PathPreview = function(props) {
         <Helmet>
           <title>{`Index of ${(self.name === '/') ? '' : self.name}/`}</title>
         </Helmet>
+        <Header {...self} />
         <FileList
           path={path}
           self={self}

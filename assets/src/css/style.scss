@@ -15,8 +15,63 @@ section {
 	max-width: 900px;
 	margin: 0 auto;
 }
-h1 {
+
+header {
+	display: flex;
+	position: sticky;
+	top: 0;
+	background-color: #F0F0F0;
 	font-size: 1.4em;
+
+	.prev {
+		flex: initial;
+		color: inherit;
+		font-size: inherit;
+		text-align: center;
+		width: 2em;
+		padding: 0.5em 0;
+		margin: 0;
+	}
+	a.prev {
+		text-decoration: none;
+		border-radius: 0.4em;
+		border: 1px solid rgba(0,0,0,0);
+		transition: all 0.4s;
+		&:hover {
+			border: 1px solid rgba(0,0,0,0.1);
+			background-color: rgba(255,255,255,0.9);
+		}
+	}
+	h1 {
+		flex: 1;
+		text-align: center;
+		font-size: inherit;
+		padding: 0.5em 0;
+		margin: 0;
+	}
+	.user {
+		display: block;
+		flex: initial;
+		width: 2em;
+		font-size: inherit;
+	}
+}
+.page-video {
+	header {
+		position: fixed;
+		width: 100%;
+		color: #777;
+		background-color: #222;
+		border-radius: 0;
+		box-shadow: none;
+		a.prev {
+			border-radius: 0;
+			&:hover {
+				color: #000;
+				background-color: rgba(255,255,255,0.4);
+			}
+		}
+	}
 }
 
 .listing {

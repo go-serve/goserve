@@ -17,7 +17,6 @@ const FileList = function(props) {
   if (typeof self === 'undefined' || self === null) return null;
   return (
     <div className={ className }>
-      <h1>{ `Index of ${(self.name === '/') ? '' : self.name}/` }</h1>
       <ul className="listing">
         {children.map((child) => (
           <li key={child.path}>
