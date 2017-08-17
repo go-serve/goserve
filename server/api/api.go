@@ -7,18 +7,14 @@ import (
 	"github.com/go-midway/midway"
 )
 
-var graphqlHandler http.Handler
-
-func init() {
-	graphqlHandler = GraphQLHandler()
-}
-
 // ServeAPI generates a middleware to serve API for file / directory information
 // query
 func ServeAPI(path string, root http.FileSystem) midway.Middleware {
 
 	path = strings.TrimRight(path, "/") // strip trailing slash
 	pathWithSlash := path + "/"
+	graphqlHandler := GraphQLHandler()
+	graphiqlHandler := GraphiQLHandler(path + "/graphql")
 
 	return func(inner http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -31,6 +27,10 @@ func ServeAPI(path string, root http.FileSystem) midway.Middleware {
 			if r.URL.Path == path+"/graphql" {
 				graphCtx := withFilesystem(withEndpointContext(r.Context(), r), root)
 				graphqlHandler.ServeHTTP(w, r.WithContext(graphCtx))
+				return
+			}
+			if r.URL.Path == path+"/graphiql" {
+				graphiqlHandler.ServeHTTP(w, r)
 				return
 			}
 
