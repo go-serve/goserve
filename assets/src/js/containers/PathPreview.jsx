@@ -2,6 +2,7 @@ import React from 'react';
 import { graphql, gql } from 'react-apollo';
 import BodyClassName from 'react-body-classname';
 import { Helmet } from 'react-helmet';
+import PropTypes from 'prop-types';
 
 import Header from './Header';
 import FileList from './FileList';
@@ -23,7 +24,7 @@ export const Query = gql`
         path
       }
     }
-    children: list(path:$path, sort:$sort){
+    containing: list(path:$path, sort:$sort){
       name
       path
       type
@@ -33,10 +34,10 @@ export const Query = gql`
   }
 `;
 
-const PathPreview = function(props) {
-  const { path="/", data: { self=null, children=[] } } = props;
+const PathPreview = (props) => {
+  const { path = '/', data: { self = null, containing = [] } } = props;
   if (self === null) return null;
-  if (self.type === "file" && self.mime === "video/mp4") {
+  if (self.type === 'file' && self.mime === 'video/mp4') {
     return (
       <BodyClassName className="page-video">
         <div>
@@ -45,13 +46,12 @@ const PathPreview = function(props) {
           </Helmet>
           <Header {...self} />
           <div className="video-container">
-            <VideoPlayer {...self}/>
+            <VideoPlayer {...self} />
           </div>
         </div>
       </BodyClassName>
     );
   }
-  const randClass = `class-${Math.random()}`;
   return (
     <BodyClassName className="page-directory">
       <section>
@@ -62,16 +62,34 @@ const PathPreview = function(props) {
         <FileList
           path={path}
           self={self}
-          children={children}
+          containing={containing}
         />
       </section>
     </BodyClassName>
   );
-}
+};
+
+PathPreview.propTypes = {
+  path: PropTypes.string,
+  data: PropTypes.shape({
+    self: PropTypes.shape({
+      name: PropTypes.string,
+      mime: PropTypes.string,
+    }),
+    containing: PropTypes.arrayOf(PropTypes.object),
+  }),
+};
+
+PathPreview.defaultProps = {
+  path: '/',
+  data: {
+    self: null,
+    containing: [],
+  },
+};
 
 export default graphql(Query, {
-  options: ({path = "/", sort="-mtime"}) => {
-    console.log(`query: ${path} ${sort}`)
+  options: ({ path = '/', sort = '-mtime' }) => {
     const options = {
       variables: {
         path,

@@ -1,3 +1,7 @@
+/* eslint
+no-underscore-dangle: 'warn',
+*/
+
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { ApolloClient, ApolloProvider, createNetworkInterface } from 'react-apollo';
@@ -27,8 +31,8 @@ const store = createStore(
 );
 
 ReactDOM.render(
-  <ApolloProvider client={client}>
-    <App loading={true} />
+  <ApolloProvider store={store} client={client}>
+    <App loading />
   </ApolloProvider>,
   document.getElementById('app'),
 );

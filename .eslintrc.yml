@@ -9,6 +9,7 @@ globals:
   window: false
   Exception: false
   WebSocket: false
+  URLSearchParams: false
 
 rules:
   react/jsx-filename-extension: 'off'

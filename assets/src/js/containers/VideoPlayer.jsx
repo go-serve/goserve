@@ -1,8 +1,13 @@
-import React from 'react';
+/* eslint
+jsx-a11y/media-has-caption: 'warn',
+*/
 
-const VideoPlayer = function(props) {
+import React from 'react';
+import PropTypes from 'prop-types';
+
+const VideoPlayer = (props) => {
   const { path, mime, subtitles } = props;
-  var hasDefaultSubtitle = false;
+  let hasDefaultSubtitle = false;
   return (
     <video controls>
       <source key="mp4" src={path} type={mime} />
@@ -21,6 +26,21 @@ const VideoPlayer = function(props) {
       })}
     </video>
   );
-}
+};
+
+VideoPlayer.propTypes = {
+  path: PropTypes.string,
+  mime: PropTypes.string,
+  subtitles: PropTypes.arrayOf(PropTypes.shape({
+    name: PropTypes.path,
+  })),
+};
+
+VideoPlayer.defaultProps = {
+  path: '/',
+  mime: '',
+  subtitles: [],
+};
+
 
 export default VideoPlayer;
