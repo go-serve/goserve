@@ -130,30 +130,19 @@ func (fs *fileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("access %#v", r.URL.Path)
 
 	// serve directory indexes
-	if d, err := fs.ReadDirInfo(r.URL.Path); err == nil {
-
-		if _, err := fs.ReadIndex(r.URL.Path); err != nil {
-
-			files, err := d.Readdir(0)
+	if _, err := fs.ReadDirInfo(r.URL.Path); err == nil {
+		if _, err = fs.ReadIndex(r.URL.Path); err != nil {
+			w.Header().Add("Content-Type", "text/html; charset=utf-8")
+			err = tplIndex.Execute(w, map[string]interface{}{
+				"Stylesheets": stylesheets,
+				"Scripts":     scripts,
+				"Base":        r.URL.Path,
+			})
 			if err != nil {
-				log.Printf("Error listing path %#v:%s", r.URL.Path, err)
-				return
+				log.Printf("err: %#v", err.Error())
 			}
-
-			// sort according to query
-			s := r.URL.Query().Get("sort")
-			if s == "" {
-				// default sort order: by mtime, desc
-				s = "-mtime"
-			}
-			api.QuerySort(s, files) // TODO: add error reporting here
-
-			// list the files
-			listFiles(w, r.URL.Path, files)
 			return
-
 		}
-
 	} else if err != errNotDir {
 		log.Printf("Error reading path %#v: %s", r.URL.Path, err)
 	}
@@ -201,43 +190,5 @@ func (fs *fileServer) ReadIndex(path string) (f http.File, err error) {
 		err = errIsDir
 	}
 
-	return
-}
-
-func listFiles(w http.ResponseWriter, base string, files []os.FileInfo) {
-	w.Header().Add("Content-Type", "text/html; charset=utf-8")
-	err := tplIndex.Execute(w, map[string]interface{}{
-		"Stylesheets": stylesheets,
-		"Scripts":     scripts,
-		"Files":       mapFiles(files),
-		"Base":        base,
-	})
-	if err != nil {
-		log.Printf("err: %#v", err.Error())
-	}
-}
-
-type fileInfo struct {
-	Name  string
-	Path  string
-	IsDir bool
-}
-
-func mapFiles(in []os.FileInfo) (out []fileInfo) {
-	out = make([]fileInfo, len(in))
-	for i := 0; i < len(in); i++ {
-		switch strings.ToLower(path.Ext(in[i].Name())) {
-		case ".mp4":
-			fallthrough
-		case ".webm":
-			out[i].Name = in[i].Name()
-			out[i].Path = in[i].Name() + "?mode=videoplayer"
-			out[i].IsDir = in[i].IsDir()
-		default:
-			out[i].Name = in[i].Name()
-			out[i].Path = in[i].Name()
-			out[i].IsDir = in[i].IsDir()
-		}
-	}
 	return
 }
