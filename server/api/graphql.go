@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"log"
 	"mime"
 	"net/http"
@@ -12,7 +10,6 @@ import (
 	"regexp"
 	"strings"
 
-	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/graphql-go/graphql"
 	linq "gopkg.in/ahmetb/go-linq.v3"
 )
@@ -440,122 +437,4 @@ func getSchema() (graphql.Schema, error) {
 	}
 
 	return graphql.NewSchema(schemaConfig)
-}
-
-type graphPostRequest struct {
-	Query         string                 `json:"query"`
-	OperationName string                 `json:"operationName"`
-	Variables     map[string]interface{} `json:"variables"`
-}
-
-func deccodeGraphRequest(ctx context.Context, r *http.Request) (req interface{}, err error) {
-	vreq := &graphPostRequest{}
-	switch r.Method {
-	case "GET":
-
-		// get query
-		vreq.Query = r.URL.Query().Get("query")
-		if vreq.Query == "" {
-			err = newInputError(fmt.Errorf("requires argument 'query' in GET request"))
-			return
-		}
-
-		// get operation name
-		vreq.OperationName = r.URL.Query().Get("operationName")
-
-		// get variables
-		if variables := r.URL.Query().Get("variables"); variables != "" {
-			err = json.Unmarshal([]byte(variables), vreq.Variables)
-		}
-		if err != nil {
-			err = newInputError(fmt.Errorf("error decoding 'variables' in GET request"))
-			return
-		}
-
-		// return request
-		req = vreq
-		return
-	case "POST":
-		contentType := r.Header.Get("Content-Type")
-		switch contentType {
-		case "application/json":
-			fallthrough
-		default:
-			dec := json.NewDecoder(r.Body)
-			err = dec.Decode(vreq)
-			if err != nil {
-				err = newInputError(err)
-				return
-			}
-
-			// return request
-			req = vreq
-			return
-		}
-	}
-	return
-}
-
-func encodeGraphErrorResponse(ctx context.Context, err error, w http.ResponseWriter) {
-	errCode := parseCode(err)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(errCode)
-	enc := json.NewEncoder(w)
-	enc.Encode(struct {
-		Code    int    `json:"code"`
-		Status  string `json:"status"`
-		Error   string `json:"error"`
-		Message string `json:"message"`
-	}{
-		Code:    errCode,
-		Status:  "error",
-		Error:   http.StatusText(errCode),
-		Message: err.Error(),
-	})
-}
-
-func encodeGraphResponse(ctx context.Context, w http.ResponseWriter, resp interface{}) error {
-	w.Header().Set("Content-Type", "application/json")
-	enc := json.NewEncoder(w)
-	return enc.Encode(resp)
-}
-
-func graphEndpoint(ctx context.Context, req interface{}) (resp interface{}, err error) {
-
-	schema, err := getSchema()
-	if err != nil {
-		return
-	}
-
-	// get request string
-	vreq, ok := req.(*graphPostRequest)
-	if !ok {
-		err = newInputError(fmt.Errorf("graphEndpoint expect req to be a string, got %#v instead", req))
-		return
-	}
-	params := graphql.Params{
-		Schema:         schema,
-		RequestString:  vreq.Query,
-		Context:        ctx,
-		OperationName:  vreq.OperationName,
-		VariableValues: vreq.Variables,
-	}
-	graphResp := graphql.Do(params)
-	if len(graphResp.Errors) > 0 {
-		err = newInputError(graphResp.Errors[0])
-		return
-	}
-	resp = graphResp
-	return
-}
-
-// GraphQLHandler returns http.Handler for the
-// graphql endpoint
-func GraphQLHandler() http.Handler {
-	return httptransport.NewServer(
-		graphEndpoint,
-		deccodeGraphRequest,
-		encodeGraphResponse,
-		httptransport.ServerErrorEncoder(encodeGraphErrorResponse),
-	)
 }

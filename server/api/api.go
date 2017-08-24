@@ -5,15 +5,24 @@ import (
 	"strings"
 
 	"github.com/go-midway/midway"
+	gqlhandler "github.com/graphql-go/handler"
 )
 
 // ServeAPI generates a middleware to serve API for file / directory information
 // query
 func ServeAPI(path string, root http.FileSystem) midway.Middleware {
 
+	schema, err := getSchema()
+	if err != nil {
+		panic(err)
+	}
+
 	path = strings.TrimRight(path, "/") // strip trailing slash
 	pathWithSlash := path + "/"
-	graphqlHandler := GraphQLHandler()
+	graphqlHandler := gqlhandler.New(&gqlhandler.Config{
+		Schema: &schema,
+		Pretty: true,
+	})
 	graphiqlHandler := GraphiQLHandler(path + "/graphql")
 
 	return func(inner http.Handler) http.Handler {
