@@ -10,3 +10,6 @@ goserve
 
 # example folder, prevent unecessary addition of files
 /_example
+
+# vendor folder (depends on Gopkg.lock)
+/vendor
