@@ -1,15 +1,15 @@
-// +build !go1.9
+// +build go1.9
 
 package server
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/go-midway/midway"
 
-	"golang.org/x/net/context"
 	"golang.org/x/net/webdav"
 )
 
